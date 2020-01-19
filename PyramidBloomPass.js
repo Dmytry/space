@@ -1,12 +1,11 @@
 PyramidBloomPassFunc = function(THREE){
     var PyramidBloomPass = function (custom_func_text) {
-        this.vertexShader = [
-            "varying vec2 vUv;",
-            "void main() {",
-                "vUv = uv;",
-                "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
-            "}"
-        ].join( "\n" );
+        this.vertexShader =
+"varying vec2 vUv;\n\
+void main() {\n\
+    vUv = uv;\n\
+    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n\
+}";
 this.blur_fs_src =
 "uniform vec2 d0;\n\
 uniform vec2 d1;\n\
