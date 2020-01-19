@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Relativistic Spaceship</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            html, body {
+                margin: 0px;
+                width:100%;
+                height:100%;
+                min-height:100%;
+                overflow: hidden;
+
+
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Opera and Firefox */
+            }
+            #canvas {
+                float: left;
+                background-color: #000;
+                width: 100%;
+                height: 100%;
+                border: 0px;
+                margin:  0px;
+                padding: 0px;
+            }
+            #info {
+                position: absolute;
+                top : 0px;
+                left: 0px;
+                z-index: 10;
+                color: #afafaf;
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 1em;
+            }
+
+            #throttle {
+              position:absolute;
+              top: 20vh;
+              height: 60vh;
+              left: 2pt;
+              width: 1.2em;
+              max-width: 1.2em;
+              border-style: solid;
+              border-width:2pt;
+              border-color:#0000cf;
+              z-index: 10;
+              color: #ffffff;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 1.000em;
+            }
+            #throttle_bar {
+              position:absolute;
+              left: 0;
+              top: 50%;
+              width: 100%;
+              height: 0;
+              background-color:red;
+              box-sizing: border-box;
+              margin:0px;
+            }
+            .throttle_text {
+              margin: 0;
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              -ms-transform: translate(-50%, -50%);
+              transform: translate(-50%, -50%);
+              text-align: center;
+              z-index: 20;
+            }
+            #throttle_number{
+              position:absolute;
+              left:130%;
+              width:5em;
+              transform: translate(0, -50%);
+            }
+
+            .visible {
+              visibility: visible;
+              opacity: 1;
+              transition: opacity 0.2s linear;
+            }
+
+            .hidden{
+              visibility: hidden;
+              opacity: 0;
+              transition: visibility 0s 2s, opacity 2s linear;
+            }
+
+
+            .value_line{
+              display: inline-block;
+            }
+
+            .number_box{
+              display: inline-block;
+              width: 6em;
+              max-width: 6em;
+              height:1.0em;
+              max-height: 1.0em;
+              overflow: hidden;
+              font-family: Courier, monospace;
+              vertical-align: middle;
+              border-style: solid;
+              border-width:1pt;
+              border-color:blue;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id="canvas"> </div>
+
+        <div id="info" onclick="hide_button_click()">
+          Welcome to the Relativistic Spaceship <span id="collapse_mark"></span><br />
+          <div id="hideable">
+          <div class="value_line"><i>&beta;</i> = <div id="speed" class="number_box">0</div></div>
+          <div class="value_line">&gamma; = <div id="gamma" class="number_box">1</div></div>
+          <div class="value_line">distance (light years) = <div id="distance" class="number_box">0</div></div>
+          <div class="value_line">screen centre Doppler factor = <div id="doppler" class="number_box">1</div></div>
+          <div class="value_line">max Doppler factor = <div id="doppler_max" class="number_box">1</div></div>
+          <div class="value_line">ship time (years) = <div id="ship_time" class="number_box">0</div></div>
+          <div class="value_line">world time (years) = <div id="world_time" class="number_box">0</div></div>
+        </div>
+          <!--
+        <input type="range" min="0" max="100" value="50" class="slider" id="myRange">
+        -->
+        </div>
+
+        <div id="throttle"
+        onmousedown="throttle_mousedown(event)"
+        >
+        <div class="throttle_text">
+        A<br/>C<br/>C<br/>E<br/>L<br/>E<br/>R<br/>A<br/>T<br/>I<br/>O<br/>N
+        </div>
+        <div id="throttle_bar"></div>
+        <div id="throttle_number" class="hidden"></div>
+        </div>
+
+        <script src="three.js"></script>
+        <script src="PyramidBloomPass.js?v=2"></script>
+
+<script id="starfield_vs" type="x-shader/x-vertex">
+precision highp float;
+attribute vec4 my_position;
+// Camera position in smallest level grid cells.
+// the modelview position has only fractional part.
+uniform vec3 offset;
+uniform float brightness_scale;
+uniform vec3 velocity;// observer velocity in local frame of refernece
+
+uniform vec3 frac_cam_pos;
+uniform mat4 lorentz; // rotation plus Lorentz transform
+
+vec3 blackbody_radiation(float t){/// implements plank law
+    const float t_white=6000.0;
+    const float b_r=22135.0;
+    const float b_g=26159.0;
+    const float b_b=31972.0;
+    const float a_r=exp(b_r/6000.0)-1.0;
+    const float a_g=exp(b_g/6000.0)-1.0;
+    const float a_b=exp(b_b/6000.0)-1.0;
+    return vec3(a_r/(exp(b_r/t)-1.0), a_g/(exp(b_g/t)-1.0), a_b/(exp(b_b/t)-1.0));
+}
+
+// How to derive:
+// Consider the spaceship crossing light waves, from the star frame of reference.
+// Phase of the wave at ship location will be changing at rate of (1+cos(alpha)*v)
+// In spaceship time, this is gamma*(1+cos(alpha)*v)
+
+
+// For the directly ahead case this simplifies to the usual formula:
+// we get
+// (1+v)/sqrt(1-v*v)
+// 1-v*v = (1+v)(1-v)
+// (1+v)/sqrt((1+v)(1-v)) = sqrt((1+v)/(1-v))
+
+float doppler(vec3 v, vec3 dir){/// doppler shift of frequency
+	float dl=length(dir);
+	float gamma=1.0/(sqrt(1.0-dot(v,v))+1E-5);
+	return gamma*(1.0+dot(v,dir)/dl);
+}
+
+float doppler_simple(float u){
+  return sqrt((1.0+u)/(1.0-u));
+}
+
+float square(float f){
+  return f*f;
+}
+
+vec3 aberration(vec3 v, vec3 dir){
+  float u2=dot(v,v);
+	float u=sqrt(u2);
+	float dl=length(dir);
+	if(u<1.0E-20)return dir/dl;
+
+  // based on relativistic velocity addition formula
+	float dp=dot(v,dir);
+	float old_c=dp/(u*dl);
+  // old_c * u = dp/dl
+	float old_s=sqrt(1.0-old_c*old_c);
+  // dp/u*dl =
+	float new_c=(u+old_c)/(1.0+dp/dl); /// new_c=(u+old_c)/(1.0+u*old_c)
+  // inverse:
+  // new_c+u*old_c*new_c=u+old_c
+  // u*old_c*new_c-old_c=u-new_c
+  // old_c*(u*new_c-1)=u-new_c
+  // old_c=(u-new_c)/(u*new_c-1.0)
+  // old_c=(new_c-u)/(1-u*new_c)
+
+
+	// float new_c=dp/(u*dl);/// test: new cosine of angle equal to old cosine
+	float new_s=sqrt(1.0-new_c*new_c); /// new sine of angle
+	vec3 sv=normalize(dir-v*dp/u2); /// old sine vector
+	vec3 new_dir=new_c*v/u + sv*new_s;
+
+
+	/// two parts: the decrease in sine shrinks the solid angle proportionally to sine, while the derivative of cosine shrinks by its value
+  // seems incorrect
+	//solid_angle_factor=(new_s/old_s) * (1.0-u*u)/square(u*old_c+1.0);
+  // d alpha / d old alpha
+  // new_c=(u+old_c)/(1.0+u*old_c)
+  // d new_c / d old_c =
+  // d( (u+x)/(1+u*x) ) / dx =
+  // (1 - u*u) / (u*x+1)^2
+  //float d_new_c_per_d_old_c=(1.0 - u2)/square(u*old_c + 1.0);
+
+
+  // According to Montgomery Johnson and Edward Teller's 1982 paper on the topic,
+  // the solid angle factor is the doppler shift squared.
+
+	return new_dir;
+}
+
+
+
+const mat3 random_rotate_1=mat3(
+-0.449494, -0.336526, -0.827469,
+0.890225, -0.0921674, -0.4461,
+0.0738586, -0.937153, 0.341013
+);
+vec3 rand3(vec4 co){
+    return fract(sin(random_rotate_1*co.xyz+vec3(co.w*200.0,0.0,0.0))*43758.5453);
+}
+
+const float prevalence_red_giants_factor=3.0;/// larger, more red giants
+const float brightness_distribution_factor=2.0; /// larger, more nonuniform brightness
+
+void brightness_temperature(vec3 pos, out float brightness_factor, out float temperature){
+    vec3 ab=rand3(vec4(pos, 1.234567));
+    float a=ab.x;
+    float b=ab.y;
+    float br=1.0/(a+1.0/brightness_distribution_factor);
+    const float tmp_distr=prevalence_red_giants_factor;
+    float t=exp(-b*tmp_distr)*30000.0;
+    temperature=t;
+    vec3 c=blackbody_radiation(t);
+    float lc=length(c);
+    brightness_factor=br/lc;
+}
+
+varying vec4 color;
+
+#define NEW_METHOD
+void main() {
+    float grid_size=exp2(my_position.w);
+    float offset_scale=exp2(-my_position.w);
+    vec3 offset_s=offset*offset_scale;
+
+    vec3 render_offset=(fract(offset_s)-vec3(0.5))*grid_size;
+
+    vec3 seed=floor(offset_s)*grid_size+my_position.xyz;
+
+    vec3 star_offset=rand3(vec4(seed, my_position.w))*2.0-vec3(1.0);
+
+    vec3 star_pos_local=my_position.xyz + star_offset*grid_size - render_offset;
+    // range of my_position (in grid_sizes) is from -15.5 to 15.5
+    // star offset is +-1 grid size
+    // render_offset is +-0.5 grid size
+    // 14x grid size is the furthest that the star could pop into the view.
+
+    float bf, temperature;
+    brightness_temperature(seed+vec3(1.1, 2.2, 3.3), bf, temperature);
+
+#ifdef NEW_METHOD
+ //Doppler effect and aberration at once using Lorentz transformation
+    vec3 dpos=star_pos_local - frac_cam_pos;
+    float r2=dot(dpos, dpos);
+    float r=sqrt(r2);
+    float fade=clamp((14.0*grid_size-r)*0.5, 0.0, 1.0);/*r-grid_size*14.0;*///r/grid_size - 14.0;
+    // 4-position of where the light was emitted
+    vec4 dpos_dt_world=vec4(dpos, -r);
+    vec4 dpos_dt_local=lorentz*dpos_dt_world;
+    // normalize to avoid clipping
+    vec3 dir=normalize(dpos_dt_local.xyz);
+    // How this works: both observers agree that the same number of waves fit into the spacetime interval.
+    // The frequency change is thus the ratio of times.
+    float df=dpos_dt_local.w/dpos_dt_world.w;
+#else
+  // My older ad-hoc manual derivation, much less straightforward to explain
+    vec4 view_pos=modelViewMatrix * vec4( star_pos_local, 1.0 );
+    float fade_distance=length(view_pos.xyz)-grid_size*14.0;
+    float fade=1.0-clamp(fade_distance, 0.0, 1.0);
+    vec3 delta=view_pos.xyz;
+    vec3 dir=aberration(velocity, delta);
+    float scaled_z=view_pos.z*offset_scale;
+    float r2=dot(view_pos.xyz, view_pos.xyz);//scaled_z*scaled_z;
+    float df=doppler(velocity, delta);
+#endif
+
+    //float compensation_df=doppler(velocity, vec3(0.0, 0.0, -1.0)); // instead of vec3(0.0, 0.0, -1.0) should use reverse aberration
+    //float comp=pow(compensation_df, exposure_compensation);//1.0/compensation_col.g;
+    //vec3 compensation_col=blackbody_radiation(6000.0*compensation_df);
+
+    // df*df is a correction based on reading Edward Teller's original paper
+/* Intensity changes in the Doppler effect
+Montgomery H. Johnson and Edward Teller
+PNAS February 1, 1982 79 (4) 1340; */
+// Todo: verify correctness by transforming electromagnetic wave's field equations.
+// I'll try to get a second set of eyes on this.
+    vec3 col = blackbody_radiation(temperature*df)*(bf*brightness_scale/(r2*df*df));
+
+    gl_Position = projectionMatrix * vec4(dir, 1.0);// * view_pos;
+
+
+    color=vec4(col*fade, 1.0);
+    gl_PointSize=1.0;
+    //color=vec4(1.0);
+}
+</script>
+<script id="starfield_fs" type="x-shader/x-fragment">
+varying vec4 color;
+void main() {
+    gl_FragColor = color;
+}
+</script>
+
+<script id="cmb_vs" type="x-shader/x-vertex">
+// Cosmic microwave background shader. Requires a mesh with positions at r=1
+precision highp float;
+uniform float brightness_scale;
+uniform mat4 lorentz; // rotation plus Lorentz transform
+
+const float temperature=2.725;
+
+vec3 blackbody_radiation(float t){/// implements plank law
+    const float t_white=6000.0;
+    const float b_r=22135.0;
+    const float b_g=26159.0;
+    const float b_b=31972.0;
+    const float a_r=exp(b_r/6000.0)-1.0;
+    const float a_g=exp(b_g/6000.0)-1.0;
+    const float a_b=exp(b_b/6000.0)-1.0;
+    return vec3(a_r/(exp(b_r/t)-1.0), a_g/(exp(b_g/t)-1.0), a_b/(exp(b_b/t)-1.0));
+}
+varying vec4 color;
+void main() {
+ //Doppler effect and aberration at once using Lorentz transformation
+    vec3 dpos=position;
+    float r2=1.0;
+    float r=1.0;
+    // 4-position of where the light was emitted
+    vec4 dpos_dt_world=vec4(dpos, -r);
+    vec4 dpos_dt_local=lorentz*dpos_dt_world;
+    // normalize to avoid clipping
+    vec3 dir=normalize(dpos_dt_local.xyz);
+    // How this works: both observers agree that the same number of waves fit into the spacetime interval.
+    // The frequency change is thus the ratio of times.
+    float df=dpos_dt_local.w/dpos_dt_world.w;
+
+
+    vec3 col = blackbody_radiation(temperature*df)*(brightness_scale/(df*df));
+
+    gl_Position = projectionMatrix * vec4(dir, 1.0);// * view_pos;
+
+    color=vec4(col, 1.0);
+    gl_PointSize=1.0;
+}
+</script>
+
+
+
+
+<script id="tonemap_vs" type="x-shader/x-vertex">
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+</script>
+<script id="tonemap_fs" type="x-shader/x-fragment">
+uniform sampler2D tDiffuse;
+uniform float color_scale;
+uniform vec3 color_bias;
+varying vec2 vUv;
+//const float bias=0.000061035*1.3179;
+void main(){
+  vec4 texture_color=texture2D(tDiffuse, vUv);
+  gl_FragColor=vec4(pow((texture_color.xyz-color_bias)*color_scale, vec3(0.6)), 1.0);//LinearTosRGB(texture_color);//vec4(pow(texture_color.xyz, 0.5), 1.0);
+}
+</script>
+
+<script>
+var infos={};
+
+var use_float_texture=true;
+
+THREE.CopyShader = {
+uniforms: {
+    "tDiffuse": { type: "t", value: null },
+    "opacity":  { type: "f", value: 1.0 }
+},
+vertexShader: [
+    "varying vec2 vUv;",
+    "void main() {",
+        "vUv = uv;",
+        "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+    "}"
+].join( "\n" ),
+
+fragmentShader: [
+    "uniform float opacity;",
+    "uniform sampler2D tDiffuse;",
+    "varying vec2 vUv;",
+    "void main() {",
+        "vec4 texel = texture2D( tDiffuse, vUv );",
+        "gl_FragColor = opacity * texel;",
+    "}"
+].join( "\n" )
+};
+
+
+
+const PyramidBloomPass=PyramidBloomPassFunc(THREE);
+
+var camera, scene, renderer, controls, container;
+var mesh_stars;
+var uniforms_stars = {
+    offset: {type: 'v3', value: new THREE.Vector3(0,0,0)},
+    brightness_scale : {type: 'f', value : 0.01},
+    velocity: {type: 'v3', value: new THREE.Vector3(0, 0, 0)},
+    frac_cam_pos: {type:'v3', value: new THREE.Vector3(0, 0, 0)},
+    lorentz: {type: 'm4', value: new THREE.Matrix4()}
+};
+
+var uniforms_cmb = {
+    brightness_scale : {type: 'f', value : 0.01},
+    lorentz: {type: 'm4', value: new THREE.Matrix4()}
+};
+
+var render_target;
+var fs_quad;
+var fs_quad_scene;
+var fs_quad_camera;
+var bloom_pass;
+
+var throttle_element;
+var throttle_bar_element;
+var throttle_value=0.0;
+
+var year_in_seconds=3.154e+7;
+var c_in_m_per_second=3.0E8;
+var accel_scale=year_in_seconds/c_in_m_per_second;
+
+var resolution_brightness_factor=0.1;
+var exposure=1.0;
+
+var color_storage_scale=1.0/64;
+// smallest normal 16 bit float number, used to avoid banding on system that treat denormals as zero
+var color_storage_bias=0.000061035*2;
+
+var prev_time_ms=-1;
+var global_time_ms=0;
+var throttle_down=false;
+var old_throttle_value=0;
+var throttle_transition_start=-1;
+
+/*
+How much should I scale cosmic microwave background?
+Sun has radius of 7E8 meters
+and at distance of 1 light year (9.46E15 meters) it is occupying solid angle of pi*(7E8/9.46E15)^2 = 1.72E-14 steradian
+Suppose sun at 1ly is scaled at 1.
+Then the scaling would be 5.81E13 per steradian
+Thus the CMB total should be 4*pi*5.81E13 = 7.3E14
+*/
+
+var CMB_scale=7.3E14;
+
+var a=1.0/Math.sqrt(3);
+var b=a*(0.5+0.5*Math.sqrt(5));
+var c=a/(0.5+0.5*Math.sqrt(5));
+var dodecahedron_vertices=new Float32Array([
+  a,a,a,
+  -a,a,a,
+  a,-a,a,
+  -a,-a,a,
+
+  a,a,-a,
+  -a,a,-a,
+  a,-a,-a,
+  -a,-a,-a,
+
+  0, b, c,
+  0, -b, c,
+  0, b, -c,
+  0, -b, -c,
+
+  c, 0, b,
+  -c, 0, b,
+  c, 0, -b,
+  -c, 0, -b,
+
+  b, c, 0,
+  -b, c, 0,
+  b, -c, 0,
+  -b, -c, 0
+]);
+
+// All of the following is for normalized units where c=1
+
+function gamma_speed2(speed2){
+  return 1/Math.sqrt(1-speed2);
+}
+
+// Different convention! Using x y z ct here instead of ct x y z
+// This matrix transforms from the stationary frame to the frame moving at a given speed
+function lorentz_matrix(v, max_gamma_){
+  var max_gamma=max_gamma_ || 1E10;
+  var result=new THREE.Matrix4();
+  var v2=v.lengthSq();
+  if(v2<1E-20 || v2>=1){
+    result.set(
+      1, 0, 0, -v.x,
+      0, 1, 0, -v.y,
+      0, 0, 1, -v.z,
+      -v.x, -v.y, -v.z, 1
+    );
+  }else{
+    var gamma=Math.min(gamma_speed2(v2), max_gamma);
+    var q=(gamma-1)/v2;
+    result.set(
+      1+q*v.x*v.x, q*v.x*v.y, q*v.x*v.z, -gamma*v.x,
+      q*v.x*v.y, 1+q*v.y*v.y, q*v.y*v.z, -gamma*v.y,
+      q*v.x*v.z, q*v.y*v.z, 1+q*v.z*v.z, -gamma*v.z,
+      -gamma*v.x, -gamma*v.y, -gamma*v.z, gamma
+    );
+  }
+  return result;
+}
+// Different convention! Using x y z ct here instead of ct x y z
+// Ill defined for speeds at or above 1 (speed of light)
+// gamma -> infinity and this whole vector -> infinity
+function four_velocity(v){
+  var gamma=gamma_speed2(v.lengthSq());
+  return new THREE.Vector4(v.x*gamma, v.y*gamma, v.z*gamma, gamma);
+}
+
+function four_velocity_to_three_velocity(v){
+  return new THREE.Vector3(v.x/v.w, v.y/v.w, v.z/v.w);
+}
+
+// returns new ship velocity as a four velocity
+function velocity_add(ship_orientation, ship_velocity, boost_velocity){
+  var ship_to_world=lorentz_matrix(ship_velocity.clone().negate());
+  var bv=four_velocity(boost_velocity.clone().applyQuaternion(ship_orientation));
+  var bv_world=bv.applyMatrix4(ship_to_world);
+  return bv_world;
+  //if(bv_world.w<=1E-20)bv_world.w=1E-20;
+  //return new THREE.Vector3(bv_word.x/bv_world.w, bv_word.y/bv_world.w, bv_word.z/bv_world.w);
+}
+
+/*
+float doppler(vec3 v, vec3 dir){/// doppler shift of frequency
+	float dl=length(dir);
+	float gamma=1.0/sqrt(1.0-dot(v,v));
+	return gamma*(1.0+dot(v,dir)/dl);
+}
+*/
+
+function forward_doppler(vel){
+  var v=vel.length();
+  return Math.sqrt((1+v)/(1-v));
+}
+
+// vel: observer velocity (in world)
+// dir: view direction (in observer)
+// used for auto exposure
+function doppler_for_view_dir(vel, dir){
+  // todo: simplify?
+  var u2=vel.lengthSq();
+  var u=Math.sqrt(u2);
+  var gamma=1/(Math.sqrt(1-u2)+1E-20);
+  var dl=dir.length();
+  var v_dot_d=vel.dot(dir);
+  var v_cos_angle=(v_dot_d/dl-u2)/((1-v_dot_d/dl)+1E-20);
+  var result=gamma*(1.0 + v_cos_angle);
+  return result;
+  // old_c=(new_c-u)/(1-u*new_c)
+
+}
+
+function temperature_to_color(t){
+  var b_r=22135.0;
+  var b_g=26159.0;
+  var b_b=31972.0;
+  var a_r=Math.exp(b_r/6000.0)-1.0;
+  var a_b=Math.exp(b_b/6000.0)-1.0;
+  var a_g=Math.exp(b_g/6000.0)-1.0;
+  return [a_r/(Math.exp(b_r/t)-1.0), a_g/(Math.exp(b_g/t)-1.0), a_b/(Math.exp(b_b/t)-1.0)];
+}
+
+function doppler_to_exposure(d){
+  var a=temperature_to_color(6000*d);
+  return 1.0/a[1];//3.0/(a[0]+a[1]+a[2]);
+}
+
+/*Spaceship controls code*/
+function Spaceship(object, domElement){
+
+
+  var turn_speed=1.0;
+	var key_turn_speed=0.2;
+	var roll_speed=0.1;
+
+  this.object=object;
+  this.domElement=domElement;
+  this.pos=new THREE.Vector3(0,0,0);
+  this.offset=new THREE.Vector3(0,0,0);
+  this.ori=new THREE.Quaternion(0,0,0,1);
+  this.vel=new THREE.Vector3(0,0,0);
+
+  this.mouse_is_down=false;
+  this.mouse_prev_x=0;
+  this.mouse_prev_y=0;
+
+  this.touch_prev_x=0;
+  this.touch_prev_y=0;
+
+  this.keys=[];
+  this.prev_update_time=-1;
+
+  this.time=0.0;// throttle is in meters per second squared
+  this.world_time=0.0;
+
+  var s=this;
+
+  var evt_elem=domElement;
+
+  function onMouseMove ( event ) {
+    console.log("mouse moved");
+    var x=event.clientX;
+    var y=event.clientY;
+    var dx=x-s.mouse_prev_x;
+    var dy=y-s.mouse_prev_y;
+    dx/=domElement.clientHeight;
+    dy/=domElement.clientHeight;
+
+    s.mouse_prev_x=x;
+    s.mouse_prev_y=y;
+    if(s.mouse_is_down){
+      var rotate_by=new THREE.Quaternion(dy*turn_speed, dx*turn_speed,0,1.0);
+      s.ori=s.ori.multiply(rotate_by);
+      s.ori=s.ori.normalize();
+    }
+
+  };
+
+  function onTouchMove ( event ) {
+    console.log("touch moved");
+    var x=event.touches[0].clientX;
+    var y=event.touches[0].clientY;
+    var dx=x-s.touch_prev_x;
+    var dy=y-s.touch_prev_y;
+    dx/=domElement.clientHeight;
+    dy/=domElement.clientHeight;
+
+    s.touch_prev_x=x;
+    s.touch_prev_y=y;
+
+    var rotate_by=new THREE.Quaternion(dy*turn_speed, dx*turn_speed,0,1.0);
+    s.ori=s.ori.multiply(rotate_by);
+    s.ori=s.ori.normalize();
+    event.preventDefault();
+
+  };
+
+
+  function onMouseUp(event){
+    s.mouse_is_down=false;
+    console.log("mouse up event");
+    evt_elem.removeEventListener('mousemove', onMouseMove);
+    evt_elem.removeEventListener('mouseup', onMouseUp);
+  };
+
+  evt_elem.addEventListener('mousedown', function(event){
+    s.mouse_is_down=true;
+    console.log("mouse down event");
+    s.mouse_prev_x=event.clientX;
+    s.mouse_prev_y=event.clientY;
+    evt_elem.addEventListener( 'mousemove', onMouseMove, false );
+    evt_elem.addEventListener( 'mouseup', onMouseUp, false );
+  });
+
+  evt_elem.addEventListener('touchstart', function(event){
+    s.mouse_is_down=true;
+    console.log("mouse down event");
+    s.touch_prev_x=event.touches[0].clientX;
+    s.touch_prev_y=event.touches[0].clientY;
+    evt_elem.addEventListener( 'touchmove', onTouchMove, false );
+  });
+
+
+  window.addEventListener('keydown', function(event){
+    console.log("Key down: "+event.keyCode);
+    s.keys[event.keyCode]=true;
+    /*if(event.keyCode==32){
+      throttle_value=1;
+      update_throttle();
+    }*/
+  });
+  window.addEventListener('keyup', function(event){
+    console.log("Key up: "+event.keyCode);
+    s.keys[event.keyCode]=false;
+    throttle_value=0;
+    //if(event.keyCode==32){
+      //throttle_value=0;
+      update_throttle();
+    //}
+  });
+
+
+  this.update=function(dt){
+    if(!(dt>=0 && dt<2.0))return;
+
+    var forward=(new THREE.Vector3(0,0,-1)).applyQuaternion(s.ori);
+    s.time+=dt;
+
+    var key_control=false;
+    var dir_vector=new THREE.Vector3(0,0,0);
+    if(s.keys[32] || s.keys[87]){
+      dir_vector.z=-1;
+    }
+    if(s.keys[83]){
+      dir_vector.z=1;
+    }
+    if(s.keys[65]){
+      dir_vector.x-=1;
+    }
+    if(s.keys[68]){
+      dir_vector.x+=1;
+    }
+    if(dir_vector.z!=0){
+      throttle_value=-dir_vector.z;
+    }
+
+    if(dir_vector.length()>1E-20){
+      dir_vector.normalize();
+      dir_vector.multiplyScalar(accel_scale*dt);
+    }else{
+    	dir_vector.z=-accel_scale*throttle_value*dt
+    }
+
+    /*
+    if(s.keys[32]){
+      s.throttle=0.1;
+    }else{
+      s.throttle=0.0;
+    }*/
+
+    var vel4=velocity_add(s.ori, s.vel, /*new THREE.Vector3(0,0,-dt*accel)*/dir_vector);
+
+    var delta=new THREE.Vector3(vel4.x*dt, vel4.y*dt, vel4.z*dt);
+    s.pos=s.pos.add(delta);
+
+    s.world_time+=dt*vel4.w;
+
+    s.vel=four_velocity_to_three_velocity(vel4);
+
+
+
+    s.offset.set(Math.floor(s.pos.x), Math.floor(s.pos.y), Math.floor(s.pos.z));
+    s.object.position.set(s.pos.x-s.offset.x, s.pos.y-s.offset.y, s.pos.z-s.offset.z);
+    s.object.setRotationFromQuaternion(s.ori);
+
+    // todo: prevent layout changes here (not sure how)
+    infos.speed.textContent=s.vel.length().toFixed(5)
+    infos.gamma.textContent=vel4.w.toFixed(3);
+    infos.distance.textContent=s.pos.length().toExponential(3);
+
+    infos.ship_time.textContent=s.time.toFixed(0);
+    infos.world_time.textContent=s.world_time.toFixed(0);
+
+
+    /*
+    if(s.vel.length()>1E-10){
+      var doppler_along_view=doppler_for_view_dir(s.vel, forward);
+      var max_doppler=forward_doppler(s.vel);
+      var exposure_brightest=doppler_to_exposure(max_doppler);
+      var exposure_center=doppler_to_exposure(doppler_along_view);
+      var dp=(forward.dot(s.vel)/s.vel.length());
+      var blend=(dp-0.7)*10;
+      if(blend<0)blend=0; else if(blend>1)blend=1;
+      exposure=exposure_brightest*blend+exposure_center*(1-blend);
+      //exposure=exposure_brightest;
+      // correct for crowding
+      exposure*=exposure;
+    }else{
+      exposure=1;
+    }*/
+    //exposure=Math.pow(forward_doppler(s.vel), -2.5);
+
+    var max_doppler=forward_doppler(s.vel);
+
+    exposure=1;//doppler_to_exposure(max_doppler)*Math.pow(max_doppler, -0.7) ;
+
+    //infos.exposure.textContent=Math.log(exposure).toFixed(5);
+    infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toFixed(2);
+    var fwd_doppler=forward_doppler(s.vel);
+    infos.doppler_max.textContent=forward_doppler(s.vel).toFixed(2);
+
+    color_storage_scale=Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
+    uniforms_stars.brightness_scale.value=resolution_brightness_factor*exposure*color_storage_scale;
+    uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
+    screen_quad_mat.uniforms.color_scale.value=1/color_storage_scale;
+
+
+    //console.log(s.ori.x);
+    //s.object.matrixAutoUpdate=true;
+    if(this.mouse_is_down){
+      //console.log("mouse down");
+    }else{
+      //console.log("mouse up");
+    }
+  };
+}
+
+var spaceship;
+
+init();
+animate();
+
+function make_arrows(){
+    var n=6;
+    var geometry = new THREE.BufferGeometry();
+    var positions = new Float32Array([
+    -1,0,0,
+    1,0,0,
+    0,-1,0,
+    0,1,0,
+    0,0,-1,
+    0,0,1
+    ]);
+    var colors = new Float32Array([
+    1,0,0,
+    1,0,0,
+    0,1,0,
+    0,1,0,
+    0,0,1,
+    0,0,1
+    ]);
+    geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
+    geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+    var material = new THREE.LineBasicMaterial( { color: 0xffffff, vertexColors: THREE.VertexColors } );
+    return new THREE.LineSegments(geometry, material);
+}
+
+function BitDeinterlace(v){
+	result=[0,0,0];
+	var i=0;
+	while(v){
+		result[0]=result[0]|((v&1)<<i);
+		result[1]=result[1]|((v&2)<<i);
+		result[2]=result[2]|((v&4)<<i);
+		v>>=3;
+		i++;
+	}
+	result[1]=result[1]>>1;
+	result[2]=result[2]>>2;
+  return result
+}
+
+function init() {
+    var list=document.getElementsByClassName("number_box");
+    for(var i=0; i<list.length; ++i){
+      infos[list[i].id]=list[i];
+    }
+
+    container = document.getElementById( 'canvas' );
+
+    throttle_element = document.getElementById('throttle');
+    throttle_bar_element = document.getElementById('throttle_bar');
+
+    var w=container.clientWidth;
+    var h=container.clientHeight;
+
+    render_target = new THREE.WebGLRenderTarget( w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      //blending: THREE.ScreenBlending,
+      blending: THREE.CustomBlending,
+      blendSrc: THREE.SrcAlphaFactor,
+      blendDst: THREE.OneFactor,
+      format: THREE.RGBAFormat,
+      type: use_float_texture ? THREE.HalfFloatType : THREE.UnsignedByteType,
+      depthBuffer: false
+    });
+    screen_quad_mat = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { type: "t", value: render_target.texture },
+        color_scale: { type: "f", value: 1/color_storage_scale },
+        color_bias: {type: "v3", value: new THREE.Vector3(0,0,0)}
+      },
+      vertexShader: document.getElementById( 'tonemap_vs' ).textContent,
+      fragmentShader: document.getElementById( 'tonemap_fs' ).textContent,
+      transparent: true,
+      depthWrite: false,
+    });
+
+    fs_quad_scene = new THREE.Scene();
+
+    fs_quad = new THREE.Mesh( new THREE.PlaneBufferGeometry(w, h), screen_quad_mat );
+    fs_quad.position.z = -100;
+    fs_quad_scene.add( fs_quad );
+
+    fs_quad_camera = new THREE.OrthographicCamera( w / - 2, w / 2, h / 2, h / - 2, -10000, 10000 );
+    fs_quad_camera.position.z = 100;
+
+    renderer = new THREE.WebGLRenderer( {antialias: false} );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( w, h );
+    container.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', onWindowResize, false );
+
+    bloom_pass = new PyramidBloomPass();
+
+    //bloom_pass.bloom_falloff_color=new THREE.Vector3( 0.8, 0.8, 0.8);
+    bloom_pass.bloom_falloff_color=new THREE.Vector3( 0.7, 0.7, 0.7);
+    bloom_pass.bloom_multiplier_color=new THREE.Vector3( 0.1, 0.1, 0.1);
+
+    //camera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, -1, 1 );
+    camera = new THREE.PerspectiveCamera( 50, w / h, 0.1, 1000 );
+    camera.position.set( 0, 0, 1 );
+
+    spaceship=new Spaceship(camera, container);
+
+    //controls = new THREE.OrbitControls( camera, container );
+    //controls.update();
+
+    scene = new THREE.Scene();
+    var geometry = new THREE.BufferGeometry();
+
+    var levels=5;
+    var bits_per_component=5;
+    var n=1<<(bits_per_component*3);
+    var offset=0.5-(1<<(bits_per_component-1));// 0.5-16 = -15.5
+    // range: -15.5 .. 15.5
+    var max_r2=offset*offset;
+    var positions = new Float32Array(levels*n*4);
+    var idx=0;
+    for(var level=0; level<levels; ++level){
+      var scale=1<<level;
+      for(var i=0; i<n; ++i){
+          var pos=BitDeinterlace(i);
+          var r2=(pos[0]+offset)*(pos[0]+offset)+(pos[1]+offset)*(pos[1]+offset)+(pos[2]+offset)*(pos[2]+offset);
+          if(r2>max_r2)continue;
+          positions[idx++]=(pos[0]+offset)*scale;
+          positions[idx++]=(pos[1]+offset)*scale;
+          positions[idx++]=(pos[2]+offset)*scale;
+          positions[idx++]=level;
+      }
+    }
+    var attrib=new THREE.Float32BufferAttribute( positions, 4 );
+    attrib.count=idx/4;
+    geometry.setAttribute( 'position',  attrib);
+    geometry.setAttribute( 'my_position', attrib);
+    geometry.setDrawRange(0, idx/4);
+
+
+    var material =  new THREE.ShaderMaterial( {
+        uniforms: uniforms_stars,
+        vertexShader: document.getElementById( 'starfield_vs' ).textContent,
+        fragmentShader: document.getElementById( 'starfield_fs' ).textContent,
+        blending: THREE.CustomBlending,
+        blendSrc: THREE.SrcAlphaFactor,
+        blendDst: THREE.OneFactor,
+    } );
+
+    mesh_stars = new THREE.Points( geometry, material );
+    mesh_stars.frustumCulled=false;
+
+    scene.add( mesh_stars );
+
+
+    var cmb_material =  new THREE.ShaderMaterial( {
+        uniforms: uniforms_cmb,
+        vertexShader: document.getElementById( 'cmb_vs' ).textContent,
+        fragmentShader: document.getElementById( 'starfield_fs' ).textContent,
+        blending: THREE.CustomBlending,
+        blendSrc: THREE.SrcAlphaFactor,
+        blendDst: THREE.OneFactor,
+    } );
+
+    var cmb_geometry=new THREE.BufferGeometry();
+    var attrib2=new THREE.Float32BufferAttribute( dodecahedron_vertices, 3 );
+    cmb_geometry.setAttribute( 'position',  attrib2);
+
+    var cmb_mesh=new THREE.Points(cmb_geometry, cmb_material);
+    cmb_mesh.frustumCulled=false;
+    scene.add(cmb_mesh);
+
+    onWindowResize();
+
+    if(URLSearchParams){
+      var params = new URLSearchParams(location.hash.substring(1));
+      var v=params.get("v") || params.get("beta");
+      if(v!=null){
+        v=parseFloat(v);
+        if(Math.abs(v)<1){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+          spaceship.vel.z=-v;
+        }
+      }
+      var gamma=params.get("gamma");
+      if(gamma!=null){
+        gamma=parseFloat(gamma);
+        if(!isNaN(gamma) && gamma>1.0){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+          if(spaceship.vel.z<=0){
+            spaceship.vel.z=-Math.sqrt(1-1/(gamma*gamma));
+          }else{
+            spaceship.vel.z=Math.sqrt(1-1/(gamma*gamma));
+          }
+        }
+      }
+
+      var acceleration=params.get("acceleration");
+      if(acceleration!=null){
+        acceleration=parseFloat(acceleration);
+        if(!isNaN(acceleration)){
+        	throttle_value=acceleration;
+        }
+      }
+
+    }
+
+    //scene.add( make_arrows() );
+}
+
+function onWindowResize() {
+
+  var w=container.clientWidth;
+  var h=container.clientHeight;
+
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( w, h);
+    render_target.setSize(w, h);
+
+    resolution_brightness_factor=h/20.0;
+
+    //uniforms_stars.brightness_scale.value=resolution_brightness_factor;
+
+    /*
+    fs_quad_camera.left=w / - 2;
+    fs_quad_camera.right=w / 2;
+    fs_quad_camera.top=h / 2;
+    fs_quad_camera.bottom=h / - 2;
+    fs_quad_camera.updateProjectionMatrix();*/
+
+}
+
+function animate(time_ms) {
+    global_time_ms=time_ms;
+    if(prev_time_ms==-1)prev_time_ms=time_ms;
+    var dt=time_ms-prev_time_ms;
+    //uniforms_E.time.value = time_ms / 1000;
+    requestAnimationFrame( animate );
+    //controls.update();
+    spaceship.update(dt/1000);
+
+    uniforms_stars.offset.value.copy(spaceship.offset);
+    var wts_q=spaceship.ori.clone();
+    wts_q.w=-wts_q.w;
+    var v_local=spaceship.vel.clone().applyQuaternion(wts_q);
+    uniforms_stars.velocity.value=v_local;
+    uniforms_stars.frac_cam_pos.value.copy(camera.position);
+
+    var lm=new THREE.Matrix4();
+    lm.makeRotationFromQuaternion(spaceship.ori.clone().conjugate());
+    lm.multiply(lorentz_matrix(spaceship.vel, 2000));
+    uniforms_stars.lorentz.value=lm;
+
+    uniforms_cmb.lorentz.value=lm;
+    //document.getElementById("debug_matrix").textContent=JSON.stringify(lm);
+
+    var c=color_storage_bias;
+    renderer.setClearColor(new THREE.Color(c,c,c),1);
+    renderer.setRenderTarget(render_target);
+
+    //console.log(bloom_pass.total_brightness_factor.x);
+
+    renderer.render( scene, camera );
+
+    bloom_pass.render(renderer, render_target, render_target, null, false);
+
+    renderer.setRenderTarget(null);
+
+
+    screen_quad_mat.uniforms.color_bias.value.set(
+      color_storage_bias*bloom_pass.total_brightness_factor.x,
+      color_storage_bias*bloom_pass.total_brightness_factor.y,
+      color_storage_bias*bloom_pass.total_brightness_factor.z);
+    renderer.render(fs_quad_scene, fs_quad_camera)
+
+    prev_time_ms=time_ms;
+
+    update_throttle();
+}
+
+function update_throttle(){
+  if(throttle_value!=old_throttle_value){
+    throttle_transition_start=global_time_ms;
+
+    throttle_number_element = document.getElementById('throttle_number');
+    var y=0.5-0.5*throttle_value;
+    if(y<0.5){
+      throttle_bar_element.style.top=(y*100)+"%";
+      throttle_bar_element.style.height=((0.5-y)*100)+"%";
+      throttle_bar_element.style.backgroundColor="#00af00";
+    }else{
+      throttle_bar_element.style.top="50%";
+      throttle_bar_element.style.height=((y-0.5)*100)+"%";
+      throttle_bar_element.style.backgroundColor="#bf0000";
+    }
+    old_throttle_value=throttle_value;
+    throttle_number_element.textContent=throttle_value.toFixed(2)+" m/s²";
+    throttle_number_element.style.top=(y*100)+"%";
+    throttle_number_element.className="visible";
+  }
+
+  if(throttle_transition_start>=0 && (global_time_ms-throttle_transition_start>500)){
+    throttle_number_element = document.getElementById('throttle_number');
+    throttle_number_element.className="hidden";
+    throttle_transition_start=-1;
+  }
+}
+
+function update_throttle_event(e){
+  var rect = throttle_element.getBoundingClientRect();
+  var y = (e.clientY - rect.top)/rect.height;
+  if(y<0.02)y=0;
+  if(y>0.98)y=1;
+  throttle_value=2*(0.5-y);
+  if(Math.abs(throttle_value)<0.02)throttle_value=0;
+  //update_throttle();
+}
+function throttle_mousedown(e){
+  console.log("throttle mouse down event");
+  throttle_down=true;
+  update_throttle_event(e);
+  window.addEventListener( 'mousemove', throttle_mousemove, true );
+  window.addEventListener( 'mouseup', throttle_mouseup, true );
+}
+
+function throttle_mousemove(e){
+  if(throttle_down){
+    update_throttle_event(e);
+    e.preventDefault();
+  }
+}
+function throttle_mouseup(e){
+  console.log("throttle mouse up event");
+  throttle_down=false;
+  window.removeEventListener('mousemove', throttle_mousemove );
+  window.removeEventListener('mouseup', throttle_mouseup);
+}
+
+function hide_button_click(){
+  var d = document.getElementById("hideable");
+  var m= document.getElementById("collapse_mark");
+  if (d.style.display === "none") {
+    d.style.display = "block";
+    m.textContent="";
+  } else {
+    d.style.display = "none";
+    m.textContent=" +";
+  }
+}
+</script>
+    </body>
+</html>
