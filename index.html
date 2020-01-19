@@ -231,7 +231,7 @@ void main() {
     // The frequency change is thus the ratio of times.
     float df=dpos_dt_local.w/dpos_dt_world.w;
 
-    // df*df is a correction based on reading Edward Teller's original paper
+    // df*df is a correction based on reading
 /* Intensity changes in the Doppler effect
 Montgomery H. Johnson and Edward Teller
 PNAS February 1, 1982 79 (4) 1340; */
@@ -292,9 +292,6 @@ void main() {
     gl_PointSize=1.0;
 }
 </script>
-
-
-
 
 <script id="tonemap_vs" type="x-shader/x-vertex">
 varying vec2 vUv;
@@ -671,7 +668,12 @@ function Spaceship(object, domElement){
     // todo: prevent layout changes here (not sure how)
     infos.speed.textContent=s.vel.length().toFixed(5)
     infos.gamma.textContent=vel4.w.toFixed(3);
-    infos.distance.textContent=s.pos.length().toExponential(3);
+    var dist=s.pos.length();
+    if(dist>1E7){
+      infos.distance.textContent=s.pos.length().toExponential(3);
+    }else{
+      infos.distance.textContent=s.pos.length().toFixed(1);
+    }
 
     infos.ship_time.textContent=s.time.toFixed(0);
     infos.world_time.textContent=s.world_time.toFixed(0);
