@@ -12,7 +12,7 @@ The view is displayed as 1 year = 1 second timelapse.
 
 The code is currently a bit of a mess and needs a cleanup.
 
-The general development philosophy is to make something that works now and will still work in 10 years. Consequently, the javascript is written directly rather than using a translation layer, node.js is not used, etc.
+The general development philosophy is to make something that works now and will still work in 10 years. Consequently, the javascript is written directly rather than using a translation layer (since a translation layer could become unsupported and old versions may become difficult to run), node.js is not used, etc.
 
 Copyright: 2020 Dmitry Lavrov.
 
