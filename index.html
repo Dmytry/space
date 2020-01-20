@@ -663,7 +663,7 @@ function Spaceship(object, domElement){
 
     s.vel=four_velocity_to_three_velocity(vel4);
 
-    s.offset.set(Math.floor(s.pos.x)%grid_wraparound, Math.floor(s.pos.y)%grid_wraparound, Math.floor(s.pos.z)%grid_wraparound);
+    s.offset.set(Math.floor(s.pos.x), Math.floor(s.pos.y), Math.floor(s.pos.z));
     s.object.position.set(s.pos.x-s.offset.x, s.pos.y-s.offset.y, s.pos.z-s.offset.z);
     s.object.setRotationFromQuaternion(s.ori);
 
@@ -957,7 +957,7 @@ function animate(time_ms) {
     //controls.update();
     spaceship.update(dt/1000);
 
-    uniforms_stars.offset.value.copy(spaceship.offset);
+    uniforms_stars.offset.value.set(spaceship.offset.x%grid_wraparound, spaceship.offset.y%grid_wraparound, spaceship.offset.z%grid_wraparound);
     var wts_q=spaceship.ori.clone();
     wts_q.w=-wts_q.w;
     var v_local=spaceship.vel.clone().applyQuaternion(wts_q);
