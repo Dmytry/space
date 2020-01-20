@@ -14,6 +14,6 @@ The code is currently a bit of a mess and needs a cleanup.
 
 The general development philosophy is to make something that works now and will still work in 10 years. Consequently, the javascript is written directly rather than using a translation layer (since a translation layer could become unsupported and old versions may become difficult to run), node.js is not used, etc.
 
-Copyright: 2020 Dmitry Lavrov.
+Copyright: 2020 Dmytry Lavrov. Website: http://dmytry.com
 
 License: Attribution-ShareAlike CC BY-SA https://creativecommons.org/licenses/by-sa/4.0/legalcode for the index.html
