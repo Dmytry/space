@@ -353,6 +353,9 @@ var exposure=1.0;
 var color_storage_scale=1.0/64;
 // smallest normal 16 bit float number, used to avoid banding on system that treat denormals as zero
 var color_storage_bias=0.000061035*2;
+	
+// used to wrap around coordinates sent to webgl
+var grid_wraparound=1048576;
 
 var prev_time_ms=-1;
 var global_time_ms=0;
@@ -660,7 +663,7 @@ function Spaceship(object, domElement){
 
     s.vel=four_velocity_to_three_velocity(vel4);
 
-    s.offset.set(Math.floor(s.pos.x), Math.floor(s.pos.y), Math.floor(s.pos.z));
+    s.offset.set(Math.floor(s.pos.x)%grid_wraparound, Math.floor(s.pos.y)%grid_wraparound, Math.floor(s.pos.z)%grid_wraparound);
     s.object.position.set(s.pos.x-s.offset.x, s.pos.y-s.offset.y, s.pos.z-s.offset.z);
     s.object.setRotationFromQuaternion(s.ori);
 
