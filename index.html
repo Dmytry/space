@@ -352,7 +352,7 @@ var exposure=1.0;
 
 var color_storage_scale=1.0/64;
 // smallest normal 16 bit float number, used to avoid banding on system that treat denormals as zero
-var color_storage_bias=0.000061035*2;
+var color_storage_bias=0.000061035*4.1;//0.000061035*2;
 
 var prev_time_ms=-1;
 var global_time_ms=0;
@@ -705,7 +705,7 @@ function Spaceship(object, domElement){
     var fwd_doppler=forward_doppler(s.vel);
     infos.doppler_max.textContent=forward_doppler(s.vel).toFixed(2);
 
-    color_storage_scale=Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
+    color_storage_scale=Math.pow(Math.min(fwd_doppler,1000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
     uniforms_stars.brightness_scale.value=resolution_brightness_factor*exposure*color_storage_scale;
     uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
     screen_quad_mat.uniforms.color_scale.value=1/color_storage_scale;
@@ -774,6 +774,19 @@ function init() {
 
     container = document.getElementById( 'canvas' );
 
+    renderer = new THREE.WebGLRenderer( {antialias: false} );
+
+// not good enough of a check
+    //var supports_float=(renderer.extensions.get('OES_texture_float'))&&(renderer.extensions.get('OES_texture_float_linear'));
+    //var supports_half=(renderer.extensions.get('OES_texture_half_float'))&&(renderer.extensions.get('OES_texture_half_float_linear'));
+
+    //var texture_type=THREE.UnsignedByteType;
+    //if(supports_float){
+    //  texture_type=THREE.FloatType;
+    //}else{
+      texture_type=THREE.HalfFloatType;
+  //  }
+
     throttle_element = document.getElementById('throttle');
     throttle_bar_element = document.getElementById('throttle_bar');
 
@@ -788,7 +801,7 @@ function init() {
       blendSrc: THREE.SrcAlphaFactor,
       blendDst: THREE.OneFactor,
       format: THREE.RGBAFormat,
-      type: use_float_texture ? THREE.HalfFloatType : THREE.UnsignedByteType,
+      type: use_float_texture ? texture_type : THREE.UnsignedByteType,
       depthBuffer: false
     });
     screen_quad_mat = new THREE.ShaderMaterial({
@@ -812,7 +825,7 @@ function init() {
     fs_quad_camera = new THREE.OrthographicCamera( w / - 2, w / 2, h / 2, h / - 2, -10000, 10000 );
     fs_quad_camera.position.z = 100;
 
-    renderer = new THREE.WebGLRenderer( {antialias: false} );
+
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( w, h );
     container.appendChild( renderer.domElement );
