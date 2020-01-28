@@ -354,6 +354,9 @@ var color_storage_scale=1.0/64;
 // smallest normal 16 bit float number, used to avoid banding on system that treat denormals as zero
 var color_storage_bias=0.000061035*4.1;//0.000061035*2;
 
+// used to wrap around coordinates sent to webgl
+var grid_wraparound=1048576;
+
 var prev_time_ms=-1;
 var global_time_ms=0;
 var throttle_down=false;
@@ -967,7 +970,7 @@ function animate(time_ms) {
     //controls.update();
     spaceship.update(dt/1000);
 
-    uniforms_stars.offset.value.copy(spaceship.offset);
+    uniforms_stars.offset.value.set(spaceship.offset.x%grid_wraparound, spaceship.offset.y%grid_wraparound, spaceship.offset.z%grid_wraparound);
     var wts_q=spaceship.ori.clone();
     wts_q.w=-wts_q.w;
     var v_local=spaceship.vel.clone().applyQuaternion(wts_q);
