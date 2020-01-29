@@ -708,7 +708,14 @@ function Spaceship(object, domElement){
     var fwd_doppler=forward_doppler(s.vel);
     infos.doppler_max.textContent=forward_doppler(s.vel).toFixed(2);
 
-    color_storage_scale=Math.pow(Math.min(fwd_doppler,1000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
+
+    //color_storage_scale=Math.pow(Math.min(fwd_doppler,4000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
+
+    var fwd_doppler2=fwd_doppler*fwd_doppler;
+    var a=temperature_to_color(6000*fwd_doppler)[1]/fwd_doppler2;
+    var b=temperature_to_color(2.74*fwd_doppler)[1]*CMB_scale/fwd_doppler2;
+    color_storage_scale=Math.min(4098/(a+b),1/64);
+
     uniforms_stars.brightness_scale.value=resolution_brightness_factor*exposure*color_storage_scale;
     uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
     screen_quad_mat.uniforms.color_scale.value=1/color_storage_scale;
@@ -769,6 +776,38 @@ function BitDeinterlace(v){
   return result
 }
 
+function parse_arguments(){
+  if(URLSearchParams){
+    var params = new URLSearchParams(location.hash.substring(1));
+    var v=params.get("v") || params.get("beta");
+    if(v!=null){
+      v=parseFloat(v);
+      if(Math.abs(v)<1){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+        spaceship.vel.z=-v;
+      }
+    }
+    var gamma=params.get("gamma");
+    if(gamma!=null){
+      gamma=parseFloat(gamma);
+      if(!isNaN(gamma) && gamma>1.0){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+        if(spaceship.vel.z<=0){
+          spaceship.vel.z=-Math.sqrt(1-1/(gamma*gamma));
+        }else{
+          spaceship.vel.z=Math.sqrt(1-1/(gamma*gamma));
+        }
+      }
+    }
+
+    var acceleration=params.get("acceleration");
+    if(acceleration!=null){
+      acceleration=parseFloat(acceleration);
+      if(!isNaN(acceleration)){
+        throttle_value=acceleration;
+      }
+    }
+  }
+}
+
 function init() {
     var list=document.getElementsByClassName("number_box");
     for(var i=0; i<list.length; ++i){
@@ -789,6 +828,14 @@ function init() {
     //}else{
       texture_type=THREE.HalfFloatType;
   //  }
+
+    if(URLSearchParams){
+      var params = new URLSearchParams(location.hash.substring(1));
+      var v=params.get("full_float");
+      if(v!=null){
+        texture_type=THREE.FloatType;
+      }
+    }
 
     throttle_element = document.getElementById('throttle');
     throttle_bar_element = document.getElementById('throttle_bar');
@@ -912,39 +959,13 @@ function init() {
     scene.add(cmb_mesh);
 
     onWindowResize();
-
-    if(URLSearchParams){
-      var params = new URLSearchParams(location.hash.substring(1));
-      var v=params.get("v") || params.get("beta");
-      if(v!=null){
-        v=parseFloat(v);
-        if(Math.abs(v)<1){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
-          spaceship.vel.z=-v;
-        }
-      }
-      var gamma=params.get("gamma");
-      if(gamma!=null){
-        gamma=parseFloat(gamma);
-        if(!isNaN(gamma) && gamma>1.0){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
-          if(spaceship.vel.z<=0){
-            spaceship.vel.z=-Math.sqrt(1-1/(gamma*gamma));
-          }else{
-            spaceship.vel.z=Math.sqrt(1-1/(gamma*gamma));
-          }
-        }
-      }
-
-      var acceleration=params.get("acceleration");
-      if(acceleration!=null){
-        acceleration=parseFloat(acceleration);
-        if(!isNaN(acceleration)){
-        	throttle_value=acceleration;
-        }
-      }
-
-    }
-
     //scene.add( make_arrows() );
+
+    try{
+      parse_arguments();
+    }catch(e){
+      console.log("Error parsing arguments: "+e);
+    }
 }
 
 function onWindowResize() {
