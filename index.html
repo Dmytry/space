@@ -699,7 +699,6 @@ function Spaceship(object, domElement){
     }*/
     //exposure=Math.pow(forward_doppler(s.vel), -2.5);
 
-    var max_doppler=forward_doppler(s.vel);
 
     exposure=1;//doppler_to_exposure(max_doppler)*Math.pow(max_doppler, -0.7) ;
 
@@ -711,10 +710,11 @@ function Spaceship(object, domElement){
 
     //color_storage_scale=Math.pow(Math.min(fwd_doppler,4000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
 
+    fwd_doppler=Math.min(fwd_doppler, 6000);
     var fwd_doppler2=fwd_doppler*fwd_doppler;
     var a=temperature_to_color(6000*fwd_doppler)[1]/fwd_doppler2;
     var b=temperature_to_color(2.74*fwd_doppler)[1]*CMB_scale/fwd_doppler2;
-    color_storage_scale=Math.min(4098/(a+b),1/64);
+    color_storage_scale=Math.min(2048/(a+b),1/64);
 
     uniforms_stars.brightness_scale.value=resolution_brightness_factor*exposure*color_storage_scale;
     uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
