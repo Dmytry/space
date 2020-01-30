@@ -715,6 +715,9 @@ function Spaceship(object, domElement){
     var a=temperature_to_color(6000*fwd_doppler)[1]/fwd_doppler2;
     var b=temperature_to_color(2.74*fwd_doppler)[1]*CMB_scale/fwd_doppler2;
     color_storage_scale=Math.min(2048/(a+b),1/64);
+    if(fwd_doppler>1300){// ad-hoc anti overflow nonsense
+      color_storage_scale/=Math.min(2,1+(fwd_doppler-1300)/1000);
+    }
 
     uniforms_stars.brightness_scale.value=resolution_brightness_factor*exposure*color_storage_scale;
     uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
