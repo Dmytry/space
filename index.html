@@ -118,6 +118,7 @@
         <div id="canvas"> </div>
 
         <div id="info" onclick="hide_button_click()">
+          <noscript>You need to enable JavaScript for this page to work.<br></noscript>
           Welcome to the Relativistic Spaceship <span id="collapse_mark"></span><br />
           <div id="hideable">
           <div class="value_line"><i>&beta;</i> = <div id="speed" class="number_box">0</div></div>
@@ -736,8 +737,7 @@ function Spaceship(object, domElement){
 
 var spaceship;
 
-init();
-animate();
+if(init())animate();
 
 function make_arrows(){
     var n=6;
@@ -811,26 +811,40 @@ function parse_arguments(){
   }
 }
 
+function failed(){
+  var t=document.body;//getElementById("info");
+  t.innerHTML="Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear"
+  t.style.fontSize = "xx-large";
+  t.style.color="white";
+  t.style.background="black";
+}
+
+
 function init() {
     var list=document.getElementsByClassName("number_box");
     for(var i=0; i<list.length; ++i){
       infos[list[i].id]=list[i];
     }
+    var supports_half=false;
+    var supports_float=false;
+    try{
+      container = document.getElementById( 'canvas' );
+      renderer = new THREE.WebGLRenderer( {antialias: false} );
+      supports_half=(renderer.extensions.get('OES_texture_half_float'))&&(renderer.extensions.get('OES_texture_half_float_linear'));
+      supports_float=(renderer.extensions.get('OES_texture_float'))&&(renderer.extensions.get('OES_texture_float_linear'));
+    }catch(e){
+    }
 
-    container = document.getElementById( 'canvas' );
-
-    renderer = new THREE.WebGLRenderer( {antialias: false} );
-
-// not good enough of a check
-    //var supports_float=(renderer.extensions.get('OES_texture_float'))&&(renderer.extensions.get('OES_texture_float_linear'));
-    //var supports_half=(renderer.extensions.get('OES_texture_half_float'))&&(renderer.extensions.get('OES_texture_half_float_linear'));
-
-    //var texture_type=THREE.UnsignedByteType;
-    //if(supports_float){
-    //  texture_type=THREE.FloatType;
-    //}else{
+    var texture_type=THREE.UnsignedByteType;
+    if(supports_half){
       texture_type=THREE.HalfFloatType;
-  //  }
+    }else if(supports_float){
+      texture_type=THREE.FloatType;
+    }else{
+      failed();
+      return false;
+      //texture_type=THREE.UnsignedByteType;// won't really work
+    }
 
     if(URLSearchParams){
       var params = new URLSearchParams(location.hash.substring(1));
@@ -969,6 +983,8 @@ function init() {
     }catch(e){
       console.log("Error parsing arguments: "+e);
     }
+
+    return true;
 }
 
 function onWindowResize() {
