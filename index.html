@@ -812,11 +812,15 @@ function parse_arguments(){
 }
 
 function failed(){
+  document.getElementsByTagName("html")[0].innerHTML="<head><meta charset=\"utf-8\"><title>Relativistic Spaceship</title><style>body{font-size:2em;}</style></head><body><html>Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear</html>"
+  /*
   var t=document.body;//getElementById("info");
+  t.removeAttribute("style");
   t.innerHTML="Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear"
   t.style.fontSize = "150%";
   t.style.color="white";
   t.style.background="black";
+  t.style.removeProperty();*/
 }
 
 
