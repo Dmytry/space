@@ -23,7 +23,10 @@
                                   supported by Chrome, Opera and Firefox */
             }
             #canvas {
-                float: left;
+                //float: left;
+                position: absolute;
+                top : 0px;
+                left: 0px;
                 background-color: #000;
                 width: 100%;
                 height: 100%;
@@ -31,10 +34,21 @@
                 margin:  0px;
                 padding: 0px;
             }
+            .container{
+              position: absolute;
+              top : 0px;
+              left: 0px;
+              width: 100%;
+              height: auto;
+              border: 0px;
+              margin:  0px;
+              padding: 0px;
+              z-index: 10;
+            }
             #info {
-                position: absolute;
-                top : 0px;
-                left: 0px;
+                //width:100%
+                //top : 0px;
+                //left: 0px;
                 z-index: 10;
                 font-family: Arial, Helvetica, sans-serif;
                 font-size: 1em;
@@ -97,6 +111,9 @@
             .value_line{
               display: inline-block;
             }
+            .speed_line{
+              font-size: 1.5em;
+            }
 
             .number_box{
               display: inline-block;
@@ -112,27 +129,46 @@
               //border-color:blue;
             }
 
+            .info_text{
+              //position:absolute;
+              width:100%;
+              //bottom: 5%;
+              z-index: 10;
+              //color: white;
+              //text-align:center;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 1.5em;
+              white-space: pre-wrap;
+            }
+
         </style>
     </head>
     <body>
         <div id="canvas"> </div>
-
+        <div class="container">
         <div id="info" onclick="hide_button_click()">
           <noscript>You need to enable JavaScript for this page to work.<br></noscript>
-          Welcome to the Relativistic Spaceship <span id="collapse_mark"></span><br />
+          <div id="collapse_mark"></div>
           <div id="hideable">
-          <div class="value_line"><i>&beta;</i> = <div id="speed" class="number_box">0</div></div>
+          <div id="explanation" class="info_text"></div><br>
+          <div class="value_line speed_line">The ship is flying at <div id="speed" class="number_box">0</div>% of the speed of light</div><br>
+          <br>
+          Relativistic parameters:<br>
           <div class="value_line">&gamma; = <div id="gamma" class="number_box">1</div></div>
           <div class="value_line">distance (light years) = <div id="distance" class="number_box">0</div></div>
           <div class="value_line">screen center Doppler factor = <div id="doppler" class="number_box">1</div></div>
           <div class="value_line">max Doppler factor = <div id="doppler_max" class="number_box">1</div></div>
           <div class="value_line">ship time (years) = <div id="ship_time" class="number_box">0</div></div>
-          <div class="value_line">world time (years) = <div id="world_time" class="number_box">0</div></div>
+          <div class="value_line">world time (years) = <div id="world_time" class="number_box">0</div></div><br>
+
+        </div>
         </div>
           <!--
-        <input type="range" min="0" max="100" value="50" class="slider" id="myRange">
-        -->
-        </div>
+        <input type="range" min="0" max="100" value="50" class="slider" id="myRange">        -->
+
+        </div>// container
+
+
 
         <div id="throttle"
         onmousedown="throttle_mousedown(event)"
@@ -313,6 +349,46 @@ void main(){
 </script>
 
 <script>
+var explanations=[
+  {text:"Welcome to the Relativistic Spaceship page. Click anywhere on the Acceleration slider.", max_speed:0.05},
+  {text:"Note that this is a time lapse; 1 year of the ship time is shown in 1 second.", max_speed:0.2},
+  {text:"Aberration makes stars appear as if they are more forward of the ship.\n\
+This is why it looks like the camera is zooming out when you accelerate.\n\
+Doppler effect makes stars appear brighter and hotter in front of the ship, dimmer and colder behind.", max_speed:0.9},
+  {text:"Even though the speed of the ship increases much slower as it approaches the speed of light,\n\
+perceived speed increases faster and faster.", max_speed:0.99},
+  {text:"Between 99% of the speed of light, and 99.9993% of the speed of light,\n\
+the starlight is shifted further and further into ultraviolet.\n\
+That does not make the bright spot ahead of the ship dimmer, though.\n\
+Infrared light becomes visible light, and more photons are collected per ship second.", max_speed:0.999993},
+  {text:"The Doppler effect is so strong now that deep infrared of the cosmic microwave background radiation\n\
+- the light left over from the big bang - is blue shifted into deep red.\n\
+Combined with the blue shifted starlight, we see a purple hue.", max_speed:0.999996},
+  {text:"Doppler-shifted cosmic microwave background radiation became the dominant source of visible light on the ship.", max_speed:0.999999},
+  {text:"Now you are staring into the big bang in all its glory; make sure to wear eye protection.", max_speed:1}
+];
+
+var current_explanation=-1;
+
+var explanation_duration=5;
+var current_explanation_countdown=-1;
+
+function update_explanation(speed, dt){
+  var i=0;
+  for(; i<explanations.length && explanations[i].max_speed<speed; ++i){
+  };
+  if(i!=current_explanation){
+    if(current_explanation_countdown<0){
+      //forward or back?
+      if(i>current_explanation)current_explanation++; else current_explanation--;
+      infos.explanation.textContent=explanations[current_explanation].text;
+      current_explanation_countdown=explanation_duration;
+    }else{
+      current_explanation_countdown-=dt;
+    }
+  }
+}
+
 var infos={};
 
 var use_float_texture=true;
@@ -669,7 +745,9 @@ function Spaceship(object, domElement){
     s.object.setRotationFromQuaternion(s.ori);
 
     // todo: prevent layout changes here (not sure how)
-    infos.speed.textContent=s.vel.length().toFixed(5)
+    var speed=s.vel.length();
+
+    infos.speed.textContent=(speed*100).toFixed(7);
     infos.gamma.textContent=vel4.w.toFixed(3);
     var dist=s.pos.length();
     if(dist>1E7){
@@ -724,9 +802,8 @@ function Spaceship(object, domElement){
     uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
     screen_quad_mat.uniforms.color_scale.value=1/color_storage_scale;
 
+    update_explanation(speed, dt);
 
-    //console.log(s.ori.x);
-    //s.object.matrixAutoUpdate=true;
     if(this.mouse_is_down){
       //console.log("mouse down");
     }else{
@@ -736,8 +813,6 @@ function Spaceship(object, domElement){
 }
 
 var spaceship;
-
-if(init())animate();
 
 function make_arrows(){
     var n=6;
@@ -813,14 +888,6 @@ function parse_arguments(){
 
 function failed(){
   document.getElementsByTagName("html")[0].innerHTML="<head><meta charset=\"utf-8\"><title>Relativistic Spaceship</title><style>body{font-size:2em;}</style></head><body><html>Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear</html>"
-  /*
-  var t=document.body;//getElementById("info");
-  t.removeAttribute("style");
-  t.innerHTML="Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear"
-  t.style.fontSize = "150%";
-  t.style.color="white";
-  t.style.background="black";
-  t.style.removeProperty();*/
 }
 
 
@@ -829,6 +896,11 @@ function init() {
     for(var i=0; i<list.length; ++i){
       infos[list[i].id]=list[i];
     }
+    list=document.getElementsByClassName("info_text");
+    for(var i=0; i<list.length; ++i){
+      infos[list[i].id]=list[i];
+    }
+
     var supports_half=false;
     var supports_float=false;
     try{
@@ -838,6 +910,7 @@ function init() {
       supports_float=(renderer.extensions.get('OES_texture_float'))&&(renderer.extensions.get('OES_texture_float_linear'));
     }catch(e){
     }
+
 
     var texture_type=THREE.UnsignedByteType;
     if(supports_half){
@@ -1117,9 +1190,11 @@ function hide_button_click(){
     m.textContent="";
   } else {
     d.style.display = "none";
-    m.textContent=" +";
+    m.textContent="Click here to show the text again.";
   }
 }
+
+if(init())animate();
 </script>
 </body>
 </html>
