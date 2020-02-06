@@ -33,13 +33,16 @@
                 border: 0px;
                 margin:  0px;
                 padding: 0px;
+                //z-index: -10;
             }
             .container{
               position: absolute;
               top : 0px;
               left: 0px;
+              //left: 3em;
+              //width: calc(100% - 6em);
               width: 100%;
-              height: auto;
+              height: 100%;
               border: 0px;
               margin:  0px;
               padding: 0px;
@@ -51,7 +54,11 @@
                 //left: 0px;
                 z-index: 10;
                 font-family: Arial, Helvetica, sans-serif;
-                font-size: 1em;
+                font-size: 2vh;//1em;
+
+                //border-style: solid;
+                //border-width:1px;
+                //border-color:blue;
             }
 
             #throttle {
@@ -66,7 +73,7 @@
               border-color:#0000cf;
               z-index: 10;
               font-family: Arial, Helvetica, sans-serif;
-              font-size: 1.000em;
+              font-size: 2vh;//1.000em;
             }
             #throttle_bar {
               position:absolute;
@@ -93,6 +100,14 @@
               left:130%;
               width:5em;
               transform: translate(0, -50%);
+              background-color: black;
+            }
+
+            #more_info{
+              position:absolute;
+              font-size:80%;
+              bottom:1em;
+              right:0%;
             }
 
             .visible {
@@ -109,64 +124,84 @@
 
 
             .value_line{
-              display: inline-block;
-            }
-            .speed_line{
-              font-size: 1.5em;
+              //display: inline-block;
+              text-align:right;
+
+              //border-style: solid;
+              //border-width:1px;
+              //border-color:red;
+
+              margin:0;
+              padding:0;
             }
 
             .number_box{
               display: inline-block;
               width: 6em;
               max-width: 6em;
-              height:1.0em;
-              max-height: 1.0em;
+              height:100%;
+              max-height: 100%;
+              //height:100%;
               overflow: hidden;
               font-family: Courier, monospace;
               vertical-align: middle;
               //border-style: solid;
-              //border-width:1pt;
+              //border-width:1px;
               //border-color:blue;
+              text-align:left;
+              //font-size:200%;
             }
 
             .info_text{
               //position:absolute;
-              width:100%;
+
+              width:calc(100%-6em);
+              padding-left:3em;
+              padding-right:3em;
+              padding-top:1em;
+
               //bottom: 5%;
               z-index: 10;
               //color: white;
               //text-align:center;
               font-family: Arial, Helvetica, sans-serif;
-              font-size: 1.5em;
+              //font-size: 1.5em;
               white-space: pre-wrap;
             }
+
+            .speed_line{
+              width:calc(100%-6em);
+              padding-left:3em;
+              padding-right:3em;
+            }
+
+
 
         </style>
     </head>
     <body>
         <div id="canvas"> </div>
         <div class="container">
-        <div id="info" onclick="hide_button_click()">
+        <div id="info">
           <noscript>You need to enable JavaScript for this page to work.<br></noscript>
-          <div id="collapse_mark"></div>
+          <div id="collapse_mark" onclick="hide_button_click()"></div>
           <div id="hideable">
-          <div id="explanation" class="info_text"></div><br>
-          <div class="value_line speed_line">The ship is flying at <div id="speed" class="number_box">0</div>% of the speed of light</div><br>
-          <br>
-          Relativistic parameters:<br>
-          <div class="value_line">&gamma; = <div id="gamma" class="number_box">1</div></div>
-          <div class="value_line">distance (light years) = <div id="distance" class="number_box">0</div></div>
-          <div class="value_line">screen center Doppler factor = <div id="doppler" class="number_box">1</div></div>
-          <div class="value_line">max Doppler factor = <div id="doppler_max" class="number_box">1</div></div>
-          <div class="value_line">ship time (years) = <div id="ship_time" class="number_box">0</div></div>
-          <div class="value_line">world time (years) = <div id="world_time" class="number_box">0</div></div><br>
-
+          <div id="explanation" class="info_text" onclick="hide_button_click()"></div><br>
+          <div class="speed_line" onclick="hide_button_click()">The ship is flying at <div id="speed" class="number_box">0%</div> of the speed of light.</div>
+            <div id="more_info">
+              <div class="value_line">&gamma; = <div id="gamma" class="number_box">1</div></div>
+              <div class="value_line">Distance (light years) = <div id="distance" class="number_box">0</div></div>
+              <div class="value_line">Screen center Doppler factor = <div id="doppler" class="number_box">1</div></div>
+              <div class="value_line">Max Doppler factor = <div id="doppler_max" class="number_box">1</div></div>
+              <div class="value_line">Ship time (years) = <div id="ship_time" class="number_box">0</div></div>
+              <div class="value_line">World time (years) = <div id="world_time" class="number_box">0</div></div>
+          </div>
         </div>
         </div>
           <!--
         <input type="range" min="0" max="100" value="50" class="slider" id="myRange">        -->
 
-        </div>// container
+        </div>
 
 
 
@@ -352,20 +387,15 @@ void main(){
 var explanations=[
   {text:"Welcome to the Relativistic Spaceship page. Click anywhere on the Acceleration slider.", max_speed:0.05},
   {text:"Note that this is a time lapse; 1 year of the ship time is shown in 1 second.", max_speed:0.2},
-  {text:"Aberration makes stars appear as if they are more forward of the ship.\n\
-This is why it looks like the camera is zooming out when you accelerate.\n\
-Doppler effect makes stars appear brighter and hotter in front of the ship, dimmer and colder behind.", max_speed:0.9},
-  {text:"Even though the speed of the ship increases much slower as it approaches the speed of light,\n\
-perceived speed increases faster and faster.", max_speed:0.99},
-  {text:"Between 99% of the speed of light, and 99.9993% of the speed of light,\n\
-the starlight is shifted further and further into ultraviolet.\n\
-That does not make the bright spot ahead of the ship dimmer, though.\n\
-Infrared light becomes visible light, and more photons are collected per ship second.", max_speed:0.999993},
-  {text:"The Doppler effect is so strong now that deep infrared of the cosmic microwave background radiation\n\
-- the light left over from the big bang - is blue shifted into deep red.\n\
-Combined with the blue shifted starlight, we see a purple hue.", max_speed:0.999996},
-  {text:"Doppler-shifted cosmic microwave background radiation became the dominant source of visible light on the ship.", max_speed:0.999999},
-  {text:"Now you are staring into the big bang in all its glory; make sure to wear eye protection.", max_speed:1}
+  {text:"Aberration makes stars appear as if they are more forward of the ship.", max_speed:0.5},
+  {text:"Aberration is the cause of the zooming out effect.", max_speed:0.6},
+  {text:"Doppler effect makes stars appear brighter and hotter in front of the ship, dimmer and colder behind.", max_speed:0.9},
+  {text:"Due to time dilation, perceived speed increases faster and faster.", max_speed:0.99},
+  {text:"While visible light blue-shifts to ultraviolet, infrared takes its place.", max_speed:0.999},
+  {text:"More and more photons hit the ship each ship second.", max_speed:0.999993},
+  {text:"Deep infrared left over from the big bang is blue-shifted too.", max_speed:0.999996},
+  {text:"There is a lot of it.", max_speed:0.999999},
+  {text:"Now you are staring into the big bang in all its glory; make sure to wear safety squints.", max_speed:1}
 ];
 
 var current_explanation=-1;
@@ -384,9 +414,9 @@ function update_explanation(speed, dt){
       infos.explanation.textContent=explanations[current_explanation].text;
       current_explanation_countdown=explanation_duration;
     }else{
-      current_explanation_countdown-=dt;
     }
   }
+  current_explanation_countdown-=dt;
 }
 
 var infos={};
@@ -608,7 +638,7 @@ function Spaceship(object, domElement){
 
   var s=this;
 
-  var evt_elem=domElement;
+  var evt_elem=window;//domElement;
 
   function onMouseMove ( event ) {
     console.log("mouse moved");
@@ -670,7 +700,7 @@ function Spaceship(object, domElement){
     console.log("mouse down event");
     s.touch_prev_x=event.touches[0].clientX;
     s.touch_prev_y=event.touches[0].clientY;
-    evt_elem.addEventListener( 'touchmove', onTouchMove, false );
+    evt_elem.addEventListener( 'touchmove', onTouchMove, { passive: false } );
   });
 
 
@@ -744,10 +774,16 @@ function Spaceship(object, domElement){
     s.object.position.set(s.pos.x-s.offset.x, s.pos.y-s.offset.y, s.pos.z-s.offset.z);
     s.object.setRotationFromQuaternion(s.ori);
 
-    // todo: prevent layout changes here (not sure how)
+    // Fix numerical instability issues
     var speed=s.vel.length();
+    if(speed>(1-1E-8)){
+      var scale=(1-1E-8)/speed;
+      s.vel.x*=scale;
+      s.vel.y*=scale;
+      s.vel.z*=scale;
+    }
 
-    infos.speed.textContent=(speed*100).toFixed(7);
+    infos.speed.textContent=(speed*100).toFixed(6)+"%";
     infos.gamma.textContent=vel4.w.toFixed(3);
     var dist=s.pos.length();
     if(dist>1E7){
@@ -1167,12 +1203,15 @@ function throttle_mousedown(e){
   update_throttle_event(e);
   window.addEventListener( 'mousemove', throttle_mousemove, true );
   window.addEventListener( 'mouseup', throttle_mouseup, true );
+  e.preventDefault();
+  e.stopPropagation();
 }
 
 function throttle_mousemove(e){
   if(throttle_down){
     update_throttle_event(e);
     e.preventDefault();
+    e.stopPropagation();
   }
 }
 function throttle_mouseup(e){
@@ -1180,6 +1219,8 @@ function throttle_mouseup(e){
   throttle_down=false;
   window.removeEventListener('mousemove', throttle_mousemove );
   window.removeEventListener('mouseup', throttle_mouseup);
+  e.preventDefault();
+  //e.stopPropagation();
 }
 
 function hide_button_click(){
