@@ -11,7 +11,7 @@
                 height:100%;
                 min-height:100%;
                 overflow: hidden;
-                color: #FF7000;
+                color: #FF9000;
 
 
   -webkit-touch-callout: none; /* iOS Safari */
@@ -389,12 +389,12 @@ var explanations=[
   {text:"Note that this is a time lapse; 1 year of the ship time is shown in 1 second.", max_speed:0.2},
   {text:"Aberration makes stars appear as if they are more forward of the ship.", max_speed:0.5},
   {text:"Aberration is the cause of the zooming out effect.", max_speed:0.6},
-  {text:"Doppler effect makes stars appear brighter and hotter in front of the ship, dimmer and colder behind.", max_speed:0.9},
+  {text:"Doppler effect not only raises and lowers frequency, but also intensity.", max_speed:0.9},
   {text:"Due to time dilation, perceived speed increases faster and faster.", max_speed:0.99},
   {text:"While visible light blue-shifts to ultraviolet, infrared takes its place.", max_speed:0.999},
   {text:"More and more photons hit the ship each ship second.", max_speed:0.999993},
   {text:"Deep infrared left over from the big bang is blue-shifted too.", max_speed:0.999996},
-  {text:"There is a lot of it.", max_speed:0.999999},
+  {text:"There is a lot of cosmic microwave background radiation.", max_speed:0.999999},
   {text:"Now you are staring into the big bang in all its glory; make sure to wear safety squints.", max_speed:1}
 ];
 
@@ -781,6 +781,12 @@ function Spaceship(object, domElement){
       s.vel.x*=scale;
       s.vel.y*=scale;
       s.vel.z*=scale;
+    }
+
+    if(vel4.w>340){
+      document.body.style.color="#00a0ff";
+    }else{
+      document.body.style.color="#ff7000";
     }
 
     infos.speed.textContent=(speed*100).toFixed(6)+"%";
