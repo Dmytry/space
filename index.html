@@ -614,6 +614,26 @@ function normalize_v4(v){
   //ww=1+(xx+yy+zz)
   v.w=Math.sqrt(1+u2);
 }
+
+// normalizes four vector by adjusting xyz to be correct for a given gamma
+// negative z velocity if v is too short
+function normalize_from_gamma(v, default_dir){
+  var u2=v.x*v.x+v.y*v.y+v.z*v.z;
+  if(u2<1E-40){
+    v.x=default_dir.x;
+    v.y=default_dir.y;
+    v.z=default_dir.z;
+    u2=v.x*v.x+v.y*v.y+v.z*v.z;
+    if(u2<1E-40){
+      u2=1;
+      v.z=-1;
+    }
+  }
+  var s=Math.sqrt((v.w*v.w-1)/u2);
+  v.x*=s;
+  v.y*=s;
+  v.z*=s;
+}
 // returns four velocity with clamped gamma;
 function clamp_gamma(v_, max=1E5){
   var v=v_.clone();
@@ -703,9 +723,11 @@ function Spaceship(object, domElement){
   this.object=object;
   this.domElement=domElement;
   this.pos=new THREE.Vector3(0,0,0);
+  this.big_pos=new THREE.Vector3(0,0,0);
   this.offset=new THREE.Vector3(0,0,0);
   this.ori=new THREE.Quaternion(0,0,0,1);
   this.vel=new THREE.Vector3(0,0,0);
+  this.forward=new THREE.Vector3(0,0,-1);
   this.vel4=new THREE.Vector4(0,0,0,1);
 
   this.mouse_is_down=false;
@@ -814,7 +836,8 @@ function Spaceship(object, domElement){
   this.update=function(dt){
     if(!(dt>=0 && dt<2.0))return;
 
-    var forward=(new THREE.Vector3(0,0,-1)).applyQuaternion(s.ori);
+    s.forward=(new THREE.Vector3(0,0,-1)).applyQuaternion(s.ori);
+    var forward=s.forward;
     s.time+=dt;
 
     var key_control=false;
@@ -856,6 +879,10 @@ function Spaceship(object, domElement){
 
     var delta=new THREE.Vector3(s.vel4.x*dt, s.vel4.y*dt, s.vel4.z*dt);
     s.pos=s.pos.add(delta);
+    s.big_pos=s.big_pos.add(delta);
+
+    // Fix for numerical stability
+    if(s.pos.lengthSq()>1E20)s.pos.set(0,0,0);
 
     s.world_time+=dt*s.vel4.w;
     s.offset.set(Math.floor(s.pos.x), Math.floor(s.pos.y), Math.floor(s.pos.z));
@@ -863,14 +890,6 @@ function Spaceship(object, domElement){
     s.object.setRotationFromQuaternion(s.ori);
 
     // Fix numerical instability issues
-    /*
-    var speed=s.vel.length();
-    if(speed>(1-1E-8)){
-      var scale=(1-1E-8)/speed;
-      s.vel.x*=scale;
-      s.vel.y*=scale;
-      s.vel.z*=scale;
-    }*/
 
     if(s.vel4.w>340 && s.vel4.w<1700){
       document.body.style.color="#00a0ff";
@@ -880,11 +899,11 @@ function Spaceship(object, domElement){
 
     infos.speed.textContent=one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";//(speed*100).toFixed(6)+"% "+one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";
     infos.gamma.textContent=s.vel4.w.toPrecision(3);//toFixed(3);
-    var dist=s.pos.length();
+    var dist=s.big_pos.length();
     if(dist>1E7){
-      infos.distance.textContent=s.pos.length().toExponential(2);
+      infos.distance.textContent=s.big_pos.length().toExponential(2);
     }else{
-      infos.distance.textContent=s.pos.length().toFixed(1);
+      infos.distance.textContent=s.big_pos.length().toFixed(1);
     }
     infos.ship_time.textContent=s.time.toFixed(0);
     if(s.world_time<1E7){
@@ -916,9 +935,9 @@ function Spaceship(object, domElement){
     exposure=1;//doppler_to_exposure(max_doppler)*Math.pow(max_doppler, -0.7) ;
 
     //infos.exposure.textContent=Math.log(exposure).toFixed(5);
-    infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toPrecision(2);
+    infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toPrecision(3);
     var fwd_doppler=forward_doppler_from_gamma(s.vel4.w);
-    infos.doppler_max.textContent=fwd_doppler.toPrecision(2);
+    infos.doppler_max.textContent=fwd_doppler.toPrecision(3);
 
 
     //color_storage_scale=Math.pow(Math.min(fwd_doppler,4000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
@@ -989,42 +1008,43 @@ function BitDeinterlace(v){
 }
 
 function parse_arguments(){
-  if(URLSearchParams){
-    var params = new URLSearchParams(location.hash.substring(1));
-    var v=params.get("v") || params.get("beta");
-    if(v!=null){
-      v=parseFloat(v);
-      if(Math.abs(v)<1){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
-        spaceship.vel.z=-v;
-        spaceship.vel4=four_velocity(spaceship.vel);
-      }
-    }
-    var gamma=params.get("gamma");
-    if(gamma!=null){
-      gamma=parseFloat(gamma);
-      if(!isNaN(gamma) && gamma>1.0){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
-        spaceship.vel4.w=gamma;
-        if(spaceship.vel.z<=0){
-          spaceship.vel4.z=-Math.sqrt(gamma*gamma-1); // ww-zz=1 zz=ww-1
-        }else{
-          spaceship.vel4.z=-Math.sqrt(gamma*gamma-1);
+  try{
+    if(URLSearchParams){
+      console.log(location.hash);
+      var params = new URLSearchParams(location.hash.substring(1));
+      var v=params.get("v") || params.get("beta");
+      if(v!=null){
+        v=parseFloat(v);
+        if(Math.abs(v)<1){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+          spaceship.vel.z=-v;
+          spaceship.vel4=four_velocity(spaceship.vel);
         }
-        /*
-        if(spaceship.vel.z<=0){
-          spaceship.vel.z=-Math.sqrt(1-1/(gamma*gamma));
-        }else{
-          spaceship.vel.z=Math.sqrt(1-1/(gamma*gamma));
-        }*/
       }
-    }
+      var gamma=params.get("gamma");
+      if(gamma!=null){
+        gamma=parseFloat(gamma);
+        if(!isNaN(gamma) && gamma>=1.0){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+          spaceship.vel4.w=gamma;
+          normalize_from_gamma(spaceship.vel4, spaceship.forward);
+          /*
+          if(spaceship.vel.z<=0){
+            spaceship.vel.z=-Math.sqrt(1-1/(gamma*gamma));
+          }else{
+            spaceship.vel.z=Math.sqrt(1-1/(gamma*gamma));
+          }*/
+        }
+      }
 
-    var acceleration=params.get("acceleration");
-    if(acceleration!=null){
-      acceleration=parseFloat(acceleration);
-      if(!isNaN(acceleration)){
-        throttle_value=acceleration;
+      var acceleration=params.get("acceleration");
+      if(acceleration!=null){
+        acceleration=parseFloat(acceleration);
+        if(!isNaN(acceleration)){
+          throttle_value=acceleration;
+        }
       }
     }
+  }catch(e){
+    console.log("Error parsing arguments: "+e);
   }
 }
 
@@ -1197,11 +1217,10 @@ function init() {
     onWindowResize();
     //scene.add( make_arrows() );
 
-    try{
-      parse_arguments();
-    }catch(e){
-      console.log("Error parsing arguments: "+e);
-    }
+    parse_arguments();
+
+
+    window.addEventListener("hashchange", parse_arguments, false);
 
     return true;
 }
