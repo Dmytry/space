@@ -650,6 +650,11 @@ function forward_doppler(vel){
   var v=vel.length();
   return Math.sqrt((1+v)/((1-v)+2E-40));
 }
+// more robust
+function forward_doppler_from_gamma(gamma){
+  var k=gamma_to_one_minus_beta(gamma);
+  return Math.sqrt((2-k)/k);
+}
 
 // vel: observer velocity (in world)
 // dir: view direction (in observer)
@@ -905,8 +910,8 @@ function Spaceship(object, domElement){
 
     //infos.exposure.textContent=Math.log(exposure).toFixed(5);
     infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toPrecision(2);
-    var fwd_doppler=forward_doppler(s.vel);
-    infos.doppler_max.textContent=forward_doppler(s.vel).toPrecision(2);
+    var fwd_doppler=forward_doppler_from_gamma(s.vel4.w);
+    infos.doppler_max.textContent=fwd_doppler.toPrecision(2);
 
 
     //color_storage_scale=Math.pow(Math.min(fwd_doppler,4000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
