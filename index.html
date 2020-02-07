@@ -150,7 +150,12 @@
               //border-color:blue;
               text-align:left;
               //font-size:200%;
-              white-space: nowrap;
+              //white-space: nowrap;
+            }
+
+            .number_inline{
+              display: inline;
+              overflow-wrap: break-word;
             }
 
             .info_text{
@@ -188,7 +193,7 @@
           <div id="collapse_mark" onclick="hide_button_click()"></div>
           <div id="hideable">
           <div id="explanation" class="info_text" onclick="hide_button_click()"></div><br>
-          <div class="speed_line" onclick="hide_button_click()">The ship is flying at <div id="speed" class="number_box">0%</div> of the speed of light.</div>
+          <div class="speed_line" onclick="hide_button_click()">The ship is flying at <div id="speed" class="number_box number_inline">0%</div> of the speed of light.</div>
             <div id="more_info">
               <div class="value_line">&gamma; = <div id="gamma" class="number_box">1</div></div>
               <div class="value_line">Distance (light years) = <div id="distance" class="number_box">0</div></div>
@@ -874,10 +879,10 @@ function Spaceship(object, domElement){
     }
 
     infos.speed.textContent=one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";//(speed*100).toFixed(6)+"% "+one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";
-    infos.gamma.textContent=s.vel4.w.toPrecision(4);//toFixed(3);
+    infos.gamma.textContent=s.vel4.w.toPrecision(3);//toFixed(3);
     var dist=s.pos.length();
     if(dist>1E7){
-      infos.distance.textContent=s.pos.length().toExponential(3);
+      infos.distance.textContent=s.pos.length().toExponential(2);
     }else{
       infos.distance.textContent=s.pos.length().toFixed(1);
     }
