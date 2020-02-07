@@ -635,7 +635,9 @@ function one_minus_x_percent_string(x){
   if(x>=0.009)return ((1-x)*100).toFixed(2);
   var nines=Math.floor(-Math.log10(x));
   var multiplier=Math.pow(10, nines);
-  return "99."+"9".repeat(nines-2)+Math.floor(100-x*multiplier*100).toString();
+  var last_2_digits=Math.floor(100-x*multiplier*100).toString();
+
+  return "99."+"9".repeat(nines-2)+("0".repeat(2-last_2_digits.length))+last_2_digits;
 }
 
 /*
