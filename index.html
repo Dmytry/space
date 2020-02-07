@@ -413,11 +413,14 @@ function update_explanation(speed, dt){
   var i=0;
   for(; i<explanations.length && explanations[i].max_speed<speed; ++i){
   };
+  if(i==explanations.length)i=explanations.length-1;
   if(i!=current_explanation){
     if(current_explanation_countdown<0){
       //forward or back?
       if(i>current_explanation)current_explanation++; else current_explanation--;
-      infos.explanation.textContent=explanations[current_explanation].text;
+      if(current_explanation>=0 && current_explanation<explanations.length){
+        infos.explanation.textContent=explanations[current_explanation].text;
+      }
       current_explanation_countdown=explanation_duration;
     }else{
     }
