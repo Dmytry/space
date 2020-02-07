@@ -612,7 +612,7 @@ function normalize_v4(v){
   //v.multiplyScalar(1/sqrt(v.w*v.w-u2));
   //ww-(xx+yy+zz)=1;
   //ww=1+(xx+yy+zz)
-  w=Math.sqrt(1+u2);
+  v.w=Math.sqrt(1+u2);
 }
 // returns four velocity with clamped gamma;
 function clamp_gamma(v_, max=1E5){
