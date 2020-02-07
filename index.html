@@ -137,12 +137,12 @@
 
             .number_box{
               display: inline-block;
-              width: 6em;
-              max-width: 6em;
+              min-width: 6em;
+              //max-width: 6em;
               height:100%;
-              max-height: 100%;
+              //max-height: 100%;
               //height:100%;
-              overflow: hidden;
+              //overflow: hidden;
               font-family: Courier, monospace;
               vertical-align: middle;
               //border-style: solid;
@@ -150,6 +150,7 @@
               //border-color:blue;
               text-align:left;
               //font-size:200%;
+              white-space: nowrap;
             }
 
             .info_text{
@@ -545,6 +546,29 @@ function lorentz_matrix(v, max_gamma_){
   }
   return result;
 }
+
+function lorentz_matrix_v4(v){
+  var result=new THREE.Matrix4();
+  var v2=v.x*v.x + v.y*v.y + v.z*v.z;// velocity^2 * gamma^2
+  if(v2<1E-20){// avoid divide by zero
+    result.set(
+      1, 0, 0, -v.x,
+      0, 1, 0, -v.y,
+      0, 0, 1, -v.z,
+      -v.x, -v.y, -v.z, 1
+    );
+  }else{
+    var gamma=v.w;
+    var q=(gamma-1)/v2; // everything multiplied by q has gamma^2 in it so it cancels out gamma^2 in v2
+    result.set(
+      1+q*v.x*v.x, q*v.x*v.y, q*v.x*v.z, -v.x,
+      q*v.x*v.y, 1+q*v.y*v.y, q*v.y*v.z, -v.y,
+      q*v.x*v.z, q*v.y*v.z, 1+q*v.z*v.z, -v.z,
+      -v.x, -v.y, -v.z, v.w
+    );
+  }
+  return result;
+}
 // Different convention! Using x y z ct here instead of ct x y z
 // Ill defined for speeds at or above 1 (speed of light)
 // gamma -> infinity and this whole vector -> infinity
@@ -566,6 +590,54 @@ function velocity_add(ship_orientation, ship_velocity, boost_velocity){
   return bv_world;
 }
 
+// ship_velocity is a 4-velocity
+// returns new ship velocity as a four velocity
+function velocity_add_v4(ship_orientation, ship_velocity, boost_velocity){
+  var v=new THREE.Vector4(-ship_velocity.x, -ship_velocity.y, -ship_velocity.z, ship_velocity.w);
+  var ship_to_world=lorentz_matrix_v4(v);
+  var bv=four_velocity(boost_velocity.clone().applyQuaternion(ship_orientation));
+  var bv_world=bv.applyMatrix4(ship_to_world);
+  return bv_world;
+}
+
+// normalizes four velocity by computing gamma from beta*gamma
+function normalize_v4(v){
+  var u2=(v.x*v.x+v.y*v.y+v.z*v.z);
+  // potentially unstable?
+  //v.multiplyScalar(1/sqrt(v.w*v.w-u2));
+  //ww-(xx+yy+zz)=1;
+  //ww=1+(xx+yy+zz)
+  w=Math.sqrt(1+u2);
+}
+// returns four velocity with clamped gamma;
+function clamp_gamma(v_, max=1E5){
+  var v=v_.clone();
+  if(v.w>max){
+    v.w=max;
+    var s=Math.sqrt((v.w*v.w-1)/(v.x*v.x+v.y*v.y+v.z*v.z));
+    v.x*=s;
+    v.y*=s;
+    v.z*=s;
+  }
+  return v;
+}
+
+function gamma_to_one_minus_beta(gamma){
+  if(gamma<1E3){
+    return 1-Math.sqrt(1-1/(gamma*gamma));
+  }else{
+    return 1/(2*gamma*gamma);
+  }
+
+}
+
+function one_minus_x_percent_string(x){
+  if(x>=0.009)return ((1-x)*100).toFixed(2);
+  var nines=Math.floor(-Math.log10(x));
+  var multiplier=Math.pow(10, nines);
+  return "99."+"9".repeat(nines-2)+Math.floor(100-x*multiplier*100).toString();
+}
+
 /*
 float doppler(vec3 v, vec3 dir){/// doppler shift of frequency
 	float dl=length(dir);
@@ -576,7 +648,7 @@ float doppler(vec3 v, vec3 dir){/// doppler shift of frequency
 
 function forward_doppler(vel){
   var v=vel.length();
-  return Math.sqrt((1+v)/(1-v));
+  return Math.sqrt((1+v)/((1-v)+2E-40));
 }
 
 // vel: observer velocity (in world)
@@ -622,6 +694,7 @@ function Spaceship(object, domElement){
   this.offset=new THREE.Vector3(0,0,0);
   this.ori=new THREE.Quaternion(0,0,0,1);
   this.vel=new THREE.Vector3(0,0,0);
+  this.vel4=new THREE.Vector4(0,0,0,1);
 
   this.mouse_is_down=false;
   this.mouse_prev_x=0;
@@ -722,6 +795,9 @@ function Spaceship(object, domElement){
     //}
   });
 
+  function to_fixed_or_exp(val, max_length){
+
+  }
 
   this.update=function(dt){
     if(!(dt>=0 && dt<2.0))return;
@@ -761,45 +837,49 @@ function Spaceship(object, domElement){
       s.throttle=0.0;
     }*/
 
-    var vel4=velocity_add(s.ori, s.vel, /*new THREE.Vector3(0,0,-dt*accel)*/dir_vector);
+    s.vel4=velocity_add_v4(s.ori, s.vel4, /*new THREE.Vector3(0,0,-dt*accel)*/dir_vector);
+    normalize_v4(s.vel4);
+    s.vel=four_velocity_to_three_velocity(s.vel4);
+    var speed=s.vel.length();
 
-    var delta=new THREE.Vector3(vel4.x*dt, vel4.y*dt, vel4.z*dt);
+    var delta=new THREE.Vector3(s.vel4.x*dt, s.vel4.y*dt, s.vel4.z*dt);
     s.pos=s.pos.add(delta);
 
-    s.world_time+=dt*vel4.w;
-
-    s.vel=four_velocity_to_three_velocity(vel4);
-
+    s.world_time+=dt*s.vel4.w;
     s.offset.set(Math.floor(s.pos.x), Math.floor(s.pos.y), Math.floor(s.pos.z));
     s.object.position.set(s.pos.x-s.offset.x, s.pos.y-s.offset.y, s.pos.z-s.offset.z);
     s.object.setRotationFromQuaternion(s.ori);
 
     // Fix numerical instability issues
+    /*
     var speed=s.vel.length();
     if(speed>(1-1E-8)){
       var scale=(1-1E-8)/speed;
       s.vel.x*=scale;
       s.vel.y*=scale;
       s.vel.z*=scale;
-    }
+    }*/
 
-    if(vel4.w>340){
+    if(s.vel4.w>340){
       document.body.style.color="#00a0ff";
     }else{
       document.body.style.color="#ff7000";
     }
 
-    infos.speed.textContent=(speed*100).toFixed(6)+"%";
-    infos.gamma.textContent=vel4.w.toFixed(3);
+    infos.speed.textContent=one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";//(speed*100).toFixed(6)+"% "+one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";
+    infos.gamma.textContent=s.vel4.w.toPrecision(4);//toFixed(3);
     var dist=s.pos.length();
     if(dist>1E7){
       infos.distance.textContent=s.pos.length().toExponential(3);
     }else{
       infos.distance.textContent=s.pos.length().toFixed(1);
     }
-
     infos.ship_time.textContent=s.time.toFixed(0);
-    infos.world_time.textContent=s.world_time.toFixed(0);
+    if(s.world_time<1E7){
+      infos.world_time.textContent=s.world_time.toFixed(0);
+    }else{
+      infos.world_time.textContent=s.world_time.toPrecision(3);
+    }
 
 
     /*
@@ -824,9 +904,9 @@ function Spaceship(object, domElement){
     exposure=1;//doppler_to_exposure(max_doppler)*Math.pow(max_doppler, -0.7) ;
 
     //infos.exposure.textContent=Math.log(exposure).toFixed(5);
-    infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toFixed(2);
+    infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toPrecision(2);
     var fwd_doppler=forward_doppler(s.vel);
-    infos.doppler_max.textContent=forward_doppler(s.vel).toFixed(2);
+    infos.doppler_max.textContent=forward_doppler(s.vel).toPrecision(2);
 
 
     //color_storage_scale=Math.pow(Math.min(fwd_doppler,4000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
@@ -904,17 +984,25 @@ function parse_arguments(){
       v=parseFloat(v);
       if(Math.abs(v)<1){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
         spaceship.vel.z=-v;
+        spaceship.vel4=four_velocity(spaceship.vel);
       }
     }
     var gamma=params.get("gamma");
     if(gamma!=null){
       gamma=parseFloat(gamma);
       if(!isNaN(gamma) && gamma>1.0){// gamma=1/sqrt(1-v*v) v*v=1-1/gamma*gamma
+        spaceship.vel4.w=gamma;
+        if(spaceship.vel.z<=0){
+          spaceship.vel4.z=-Math.sqrt(gamma*gamma-1); // ww-zz=1 zz=ww-1
+        }else{
+          spaceship.vel4.z=-Math.sqrt(gamma*gamma-1);
+        }
+        /*
         if(spaceship.vel.z<=0){
           spaceship.vel.z=-Math.sqrt(1-1/(gamma*gamma));
         }else{
           spaceship.vel.z=Math.sqrt(1-1/(gamma*gamma));
-        }
+        }*/
       }
     }
 
@@ -1138,7 +1226,10 @@ function animate(time_ms) {
 
     var lm=new THREE.Matrix4();
     lm.makeRotationFromQuaternion(spaceship.ori.clone().conjugate());
-    lm.multiply(lorentz_matrix(spaceship.vel, 2000));
+    //lm.multiply(lorentz_matrix(spaceship.vel, 2000));
+
+    lm.multiply(lorentz_matrix_v4(clamp_gamma(spaceship.vel4, 1E5)));
+
     uniforms_stars.lorentz.value=lm;
 
     uniforms_cmb.lorentz.value=lm;
