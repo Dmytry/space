@@ -61,6 +61,59 @@
                 //border-color:blue;
             }
 
+            .slider_right{
+              top: 20vh;
+              height: 60vh;
+              right: 2pt;
+              //left:50%;
+            }
+
+            .slider {
+              position:absolute;
+              width: 1.2em;
+              max-width: 1.2em;
+              border-style: solid;
+              border-width:2pt;
+              border-color:#0000cf;
+              z-index: 10;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 2vh;//1.000em;
+            }
+            .slider_bar {
+              position:absolute;
+              left: 0;
+              top: 50%;
+              width: 100%;
+              height: 0;
+              background-color:red;
+              box-sizing: border-box;
+              margin:0px;
+            }
+            .slider_text {
+              margin: 0;
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              -ms-transform: translate(-50%, -50%);
+              transform: translate(-50%, -50%);
+              text-align: center;
+              z-index: 20;
+            }
+            .slider_number{
+              position:absolute;
+              top:10%;
+              right:130%;
+              //width:3em;
+              white-space: nowrap;
+
+              transform: translate(0, -50%);
+              background-color: black;
+
+              //border-style: solid;
+              //border-width:1px;
+              //border-color:#00FF00;
+            }
+
             #throttle {
               position:absolute;
               top: 20vh;
@@ -98,9 +151,11 @@
             #throttle_number{
               position:absolute;
               left:130%;
-              width:5em;
+              //width:5em;
+              white-space: nowrap;
               transform: translate(0, -50%);
               background-color: black;
+
             }
 
             #more_info{
@@ -187,7 +242,7 @@
     </head>
     <body>
         <div id="canvas"> </div>
-        <div class="container">
+        <div class="container" id="all_ui">
         <div id="info">
           <noscript>You need to enable JavaScript for this page to work.<br></noscript>
           <div id="collapse_mark" onclick="hide_button_click()"></div>
@@ -207,7 +262,7 @@
           <!--
         <input type="range" min="0" max="100" value="50" class="slider" id="myRange">        -->
 
-        </div>
+
 
 
 
@@ -219,6 +274,17 @@
         </div>
         <div id="throttle_bar"></div>
         <div id="throttle_number" class="hidden"></div>
+        </div>
+
+
+        <div id="exposure" class="slider slider_right">
+        <div class="slider_text">
+        B<br/>R<br/>I<br/>G<br/>H<br/>T<br/>N<br/>E<br/>S<br/>S<br/>
+        </div>
+        <div class="slider_bar"></div>
+        <div class="slider_number hidden">1</div>
+        </div>
+
         </div>
 
         <script src="three.js"></script>
@@ -429,6 +495,7 @@ function update_explanation(speed, dt){
 }
 
 var infos={};
+var sliders={};
 
 var use_float_texture=true;
 
@@ -695,9 +762,12 @@ function doppler_for_view_dir(vel, dir){
   var u=Math.sqrt(u2);
   var gamma=1/(Math.sqrt(1-u2)+1E-20);
   var dl=dir.length();
-  var v_dot_d=vel.dot(dir);
-  var v_cos_angle=(v_dot_d/dl-u2)/((1-v_dot_d/dl)+1E-20);
+  var v_dot_d=vel.dot(dir)/dl;
+
+  var v_cos_angle=(v_dot_d-u2)/(1-v_dot_d+1E-20);
+
   var result=gamma*(1.0 + v_cos_angle);
+
   return result;
   // old_c=(new_c-u)/(1-u*new_c)
 }
@@ -935,7 +1005,9 @@ function Spaceship(object, domElement){
     //exposure=Math.pow(forward_doppler(s.vel), -2.5);
 
 
-    exposure=1;//doppler_to_exposure(max_doppler)*Math.pow(max_doppler, -0.7) ;
+    if(sliders.exposure){
+      exposure=Math.pow(2.51188643151,sliders.exposure.value*sliders.exposure.scale);//doppler_to_exposure(max_doppler)*Math.pow(max_doppler, -0.7) ;
+    }
 
     //infos.exposure.textContent=Math.log(exposure).toFixed(5);
     infos.doppler.textContent=doppler_for_view_dir(s.vel, forward).toPrecision(3);
@@ -949,13 +1021,19 @@ function Spaceship(object, domElement){
     var fwd_doppler2=fwd_doppler*fwd_doppler;
     var a=temperature_to_color(6000*fwd_doppler)[1]/fwd_doppler2;
     var b=temperature_to_color(2.74*fwd_doppler)[1]*CMB_scale/fwd_doppler2;
-    color_storage_scale=Math.min(2048/(a+b),1/64);
+
+    
+    color_storage_scale=Math.min(2048/((a+b)*exposure),1/64);
+
+
     if(fwd_doppler>1300){// ad-hoc anti overflow nonsense
       color_storage_scale/=Math.min(2,1+(fwd_doppler-1300)/1000);
     }
 
-    uniforms_stars.brightness_scale.value=resolution_brightness_factor*exposure*color_storage_scale;
-    uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exposure*CMB_scale*color_storage_scale/(20.0);
+    var exp_adj=exposure;
+    
+    uniforms_stars.brightness_scale.value=resolution_brightness_factor*exp_adj*color_storage_scale;
+    uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exp_adj*CMB_scale*color_storage_scale/(20.0);
     screen_quad_mat.uniforms.color_scale.value=1/color_storage_scale;
 
     update_explanation(speed, dt);
@@ -1045,6 +1123,12 @@ function parse_arguments(){
           throttle_value=acceleration;
         }
       }
+      if(params.get("noui")==undefined){
+        document.getElementById("all_ui").style.visibility="visible";
+      }else{
+        document.getElementById("all_ui").style.visibility="hidden";
+      }
+
     }
   }catch(e){
     console.log("Error parsing arguments: "+e);
@@ -1055,15 +1139,29 @@ function failed(){
   document.getElementsByTagName("html")[0].innerHTML="<head><meta charset=\"utf-8\"><title>Relativistic Spaceship</title><style>body{font-size:2em;}</style></head><body><html>Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear</html>"
 }
 
+function for_all_elements(class_names, f){
+  for(var i=0; i<class_names.length; ++i){
+    var list=document.getElementsByClassName(class_names[i]);
+    for(var j=0; j<list.length; ++j){
+      f(list[j]);
+    }
+  }
+}
 
 function init() {
-    var list=document.getElementsByClassName("number_box");
-    for(var i=0; i<list.length; ++i){
-      infos[list[i].id]=list[i];
-    }
-    list=document.getElementsByClassName("info_text");
-    for(var i=0; i<list.length; ++i){
-      infos[list[i].id]=list[i];
+    for_all_elements(["number_box", "info_text"],
+    function(l){
+      infos[l.id]=l;
+    });
+    for_all_elements(["slider"],
+    function(l){
+      sliders[l.id]=Slider({}, l, "v");
+    });
+
+    sliders.exposure.scale=15;
+    sliders.exposure.value_str=function(){
+      var v=sliders.exposure.value*sliders.exposure.scale;
+      return (v>=0?"+"+v.toFixed(2) : v.toFixed(2)) + "mag";
     }
 
     var supports_half=false;
@@ -1219,9 +1317,7 @@ function init() {
 
     onWindowResize();
     //scene.add( make_arrows() );
-
     parse_arguments();
-
 
     window.addEventListener("hashchange", parse_arguments, false);
 
@@ -1262,7 +1358,7 @@ function animate(time_ms) {
     lm.makeRotationFromQuaternion(spaceship.ori.clone().conjugate());
     //lm.multiply(lorentz_matrix(spaceship.vel, 2000));
 
-    lm.multiply(lorentz_matrix_v4(clamp_gamma(spaceship.vel4, 1E5)));
+    lm.multiply(lorentz_matrix_v4(clamp_gamma(spaceship.vel4, 1E6)));
 
     uniforms_stars.lorentz.value=lm;
 
@@ -1289,6 +1385,81 @@ function animate(time_ms) {
     prev_time_ms=time_ms;
 
     update_throttle();
+}
+
+// slider implementation
+function Slider(obj, el, direction){
+  var width_or_height;
+  var top_or_left;
+  var event_opts={capture:true, passive: false};
+  if(direction=="h"){
+    width_or_height="width";
+    top_or_left="left";
+  }else{
+    width_or_height="height";
+    top_or_left="top";
+  }
+  obj.el=el;
+  obj.num_el=el.getElementsByClassName("slider_number")[0];
+  obj.bar_el=el.getElementsByClassName("slider_bar")[0];
+  obj.value_str=function(){
+    return obj.value.toFixed(2);
+  }
+  obj.value=0;
+  obj.old_value=0;
+
+  obj.update_view=function(){
+    if(obj.value==obj.old_value)return;
+    var y=0.5-0.5*obj.value;
+    if(y<0.5){
+      obj.bar_el.style[top_or_left]=(y*100)+"%";
+      obj.bar_el.style[width_or_height]=((0.5-y)*100)+"%";
+      obj.bar_el.style.backgroundColor="#00af00";
+    }else{
+      obj.bar_el.style[top_or_left]="50%";
+      obj.bar_el.style[width_or_height]=((y-0.5)*100)+"%";
+      obj.bar_el.style.backgroundColor="#bf0000";
+    }
+    obj.num_el.textContent=obj.value_str();
+    obj.num_el.style[top_or_left]=(y*100)+"%";
+    obj.num_el.classList.remove("hidden");
+    obj.num_el.classList.add("visible");
+    obj.old_value=obj.value;
+    window.setTimeout(function(){
+       obj.num_el.classList.remove("visible");
+       obj.num_el.classList.add("hidden");
+      }, 500);
+  }
+  obj.update_event=function(e){
+    var rect = el.getBoundingClientRect();
+    var y = (e.clientY - rect.top)/rect.height;
+    if(y<0.02)y=0;
+    if(y>0.98)y=1;
+    obj.value = 2*(0.5-y);
+    if(Math.abs(obj.value)<0.02)obj.value=0;
+    obj.update_view();
+  }
+  obj.mousemove=function(e){
+    obj.update_event(e);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  obj.mouseup=function(e){
+    console.log("mouse up on slider");
+    window.removeEventListener('mousemove', obj.mousemove, event_opts);
+    window.removeEventListener('mouseup', obj.mouseup, event_opts);
+    e.preventDefault();
+  }
+  obj.mousedown=function(e){
+    obj.is_down=true;
+    obj.update_event(e);
+    window.addEventListener( 'mousemove', obj.mousemove, event_opts );
+    window.addEventListener( 'mouseup', obj.mouseup, event_opts);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  el.addEventListener("mousedown", obj.mousedown);
+  return obj;
 }
 
 function update_throttle(){
