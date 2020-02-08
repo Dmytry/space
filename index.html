@@ -222,7 +222,7 @@
     </head>
     <body>
         <div id="canvas"> </div>
-        <div class="container" id="all_ui" ondblclick="openFullscreen()">
+        <div class="container" id="all_ui" ondblclick="toggleFullscreen()">
         <div id="info">
           <noscript>You need to enable JavaScript for this page to work.<br></noscript>
           <div id="collapse_mark" onclick="hide_button_click()"></div>
@@ -1143,20 +1143,43 @@ function for_all_elements(class_names, f){
   }
 }
 
+/* View in fullscreen */
 function openFullscreen() {
-      var elem = document.body;//getElementById("canvas");
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.mozRequestFullScreen) { /* Firefox */
-        elem.mozRequestFullScreen();
-      } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) { /* IE/Edge */
-        elem.msRequestFullscreen();
-      }
-      elem.style.width = '100%';
-      elem.style.height = '100%';
-    }
+  var elem = document.documentElement;
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+  } else if (elem.mozRequestFullScreen) { /* Firefox */
+    elem.mozRequestFullScreen();
+  } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+    elem.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) { /* IE/Edge */
+    elem.msRequestFullscreen();
+  }
+}
+
+/* Close fullscreen */
+function closeFullscreen() {
+  var elem = document.documentElement;
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.mozCancelFullScreen) { /* Firefox */
+    document.mozCancelFullScreen();
+  } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+    document.webkitExitFullscreen();
+  } else if (document.msExitFullscreen) { /* IE/Edge */
+    document.msExitFullscreen();
+  }
+}
+
+var is_fullscreen=false;
+function toggleFullscreen(){
+  is_fullscreen=!is_fullscreen;
+  if(is_fullscreen){
+    openFullscreen();
+  }else{
+    closeFullscreen();
+  }
+}
 
 function init() {
     for_all_elements(["number_box", "info_text"],
