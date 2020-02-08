@@ -1022,7 +1022,7 @@ function Spaceship(object, domElement){
     var a=temperature_to_color(6000*fwd_doppler)[1]/fwd_doppler2;
     var b=temperature_to_color(2.74*fwd_doppler)[1]*CMB_scale/fwd_doppler2;
 
-    
+
     color_storage_scale=Math.min(2048/((a+b)*exposure),1/64);
 
 
@@ -1031,7 +1031,7 @@ function Spaceship(object, domElement){
     }
 
     var exp_adj=exposure;
-    
+
     uniforms_stars.brightness_scale.value=resolution_brightness_factor*exp_adj*color_storage_scale;
     uniforms_cmb.brightness_scale.value=resolution_brightness_factor*exp_adj*CMB_scale*color_storage_scale/(20.0);
     screen_quad_mat.uniforms.color_scale.value=1/color_storage_scale;
@@ -1135,8 +1135,26 @@ function parse_arguments(){
   }
 }
 
+var supports_webgl=false;
+
 function failed(){
-  document.getElementsByTagName("html")[0].innerHTML="<head><meta charset=\"utf-8\"><title>Relativistic Spaceship</title><style>body{font-size:2em;}</style></head><body><html>Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.<br>Required WebGL version: 1.0, with extensions: OES_texture_half_float, OES_texture_half_float_linear</html>"
+  document.getElementsByTagName("html")[0].innerHTML=
+"<head><meta charset=\"utf-8\"><title>Relativistic Spaceship</title><style>\
+body{font-size:2em;}</style></head><body><html>\
+Sorry, your device does not support necessary WebGL extensions to display this page.<br>You can try a different browser.\
+<br>Required <span id=\"webgl\">WebGL version: 1.0</span>, with extensions: \
+<span id=\"thf\">OES_texture_half_float</span>, \
+<span id=\"thfl\">OES_texture_half_float_linear</span>\
+</html>";
+  try{
+    if(!supports_webgl)document.getElementById("webgl").style.color="red";
+    if(renderer){
+      if(!renderer.extensions.get('OES_texture_half_float'))document.getElementById("thf").style.color="red";
+      if(!renderer.extensions.get('OES_texture_half_float_linear'))document.getElementById("thfl").style.color="red";
+    }
+  }catch(e){
+    console.log(e);
+  }
 }
 
 function for_all_elements(class_names, f){
@@ -1170,10 +1188,14 @@ function init() {
       container = document.getElementById( 'canvas' );
       renderer = new THREE.WebGLRenderer( {antialias: false} );
       supports_half=(renderer.extensions.get('OES_texture_half_float'))&&(renderer.extensions.get('OES_texture_half_float_linear'));
+      // if didn't throw by now, webgl works
+      supports_webgl=true;
       supports_float=(renderer.extensions.get('OES_texture_float'))&&(renderer.extensions.get('OES_texture_float_linear'));
     }catch(e){
+
     }
 
+    //failed();
 
     var texture_type=THREE.UnsignedByteType;
     if(supports_half){
