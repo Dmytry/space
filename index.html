@@ -211,6 +211,10 @@
               padding-left:3em;
               padding-right:3em;
             }
+            a{
+              color: inherit;
+              text-decoration:none;
+            }
 
 
 
@@ -233,7 +237,7 @@
               <div class="value_line">Ship time (years) = <div id="ship_time" class="number_box">0</div></div>
               <div class="value_line">World time (years) = <div id="world_time" class="number_box">0</div></div>
           </div>
-          <div id="copyright">© 2020 Dmitry Lavrov.</div>
+          <div id="copyright"><a href="http://dmytry.com">© 2020 Dmytry Lavrov.</a> <a href="https://github.com/mrdoob/three.js/">Uses Three.JS framework.</a></div>
         </div>
         </div>
 
@@ -789,7 +793,7 @@ function Spaceship(object, domElement){
   var evt_elem=window;//domElement;
 
   function onMouseMove ( event ) {
-    console.log("mouse moved");
+    console.log("Spaceship mouse moved");
     var x=event.clientX;
     var y=event.clientY;
     var dx=x-s.mouse_prev_x;
@@ -808,7 +812,7 @@ function Spaceship(object, domElement){
   };
 
   function onTouchMove ( event ) {
-    console.log("touch moved");
+    console.log("Spaceship touch moved");
     var x=event.touches[0].clientX;
     var y=event.touches[0].clientY;
     var dx=x-s.touch_prev_x;
@@ -837,7 +841,7 @@ function Spaceship(object, domElement){
   evt_elem.addEventListener('mousedown', function(event){
     //openFullscreen();
     s.mouse_is_down=true;
-    console.log("mouse down event");
+    console.log("Spaceship mouse down");
     s.mouse_prev_x=event.clientX;
     s.mouse_prev_y=event.clientY;
     evt_elem.addEventListener( 'mousemove', onMouseMove, false );
@@ -845,8 +849,8 @@ function Spaceship(object, domElement){
   });
 
   evt_elem.addEventListener('touchstart', function(event){
+    console.log("Spaceship touch start");
     s.mouse_is_down=true;
-    console.log("mouse down event");
     s.touch_prev_x=event.touches[0].clientX;
     s.touch_prev_y=event.touches[0].clientY;
     evt_elem.addEventListener( 'touchmove', onTouchMove, { passive: false } );
@@ -1410,6 +1414,17 @@ function animate(time_ms) {
     prev_time_ms=time_ms;
 }
 
+function get_touch_by_id(list, id){
+  for(var i=0; i<list.length; ++i){
+    if(list[i].identifier==id)return list[i];
+  }
+  if(id===0){
+    return list[0];
+  }else{
+    return null;
+  }
+}
+
 // slider implementation
 function Slider(obj, el, direction){
   var width_or_height;
@@ -1487,12 +1502,14 @@ function Slider(obj, el, direction){
   el.addEventListener("mousedown", obj.mousedown);
 
   obj.touchstart=function(e){
+    console.log("Slider touch start");
     var old_touch_id=obj.touch_id;
     touch=e.changedTouches[0];
     if(touch){
-      obj.touch_id=touch.identifier;
+      obj.touch_id=touch.identifier || 0;
       obj.update_event(e, touch.clientY);
       if(!old_touch_id){
+        console.log("Adding slider touch handlers");
         window.addEventListener("touchmove", obj.touchmove, event_opts);
         window.addEventListener("touchend", obj.touchend, event_opts);
         window.addEventListener("touchcancel", obj.touchend, event_opts);
@@ -1502,7 +1519,8 @@ function Slider(obj, el, direction){
     }
   }
   obj.touchmove=function(e){
-    touch=e.changedTouches.item(obj.touch_id);
+    console.log("Slider touch moved");
+    touch=get_touch_by_id(e.changedTouches, obj.touch_id);//e.changedTouches.item(obj.touch_id);
     if(touch){
       obj.update_event(e, touch.clientY);
       e.preventDefault();
@@ -1510,8 +1528,10 @@ function Slider(obj, el, direction){
     }
   }
   obj.touchend=function(e){
-    touch=e.changedTouches.item(obj.touch_id);
+    console.log("Slider touch end");
+    touch=get_touch_by_id(e.changedTouches, obj.touch_id);
     if(touch){
+      console.log("Removing slider touch handlers");
       window.removeEventListener("touchmove", obj.touchmove, event_opts);
       window.removeEventListener("touchend", obj.touchend, event_opts);
       window.removeEventListener("touchcancel", obj.touchend, event_opts);
@@ -1519,7 +1539,6 @@ function Slider(obj, el, direction){
     }
   }
   el.addEventListener("touchstart", obj.touchstart, event_opts);
-
   return obj;
 }
 
