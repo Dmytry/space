@@ -4,6 +4,7 @@
         <title>Relativistic Spaceship</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <style>
             html, body {
                 margin: 0px;
@@ -133,6 +134,13 @@
               right:0%;
             }
 
+            #copyright{
+              position:absolute;
+              font-size:60%;
+              bottom:0.1em;
+              left:0%;
+            }
+
             .visible {
               visibility: visible;
               opacity: 1;
@@ -225,6 +233,7 @@
               <div class="value_line">Ship time (years) = <div id="ship_time" class="number_box">0</div></div>
               <div class="value_line">World time (years) = <div id="world_time" class="number_box">0</div></div>
           </div>
+          <div id="copyright">© 2020 Dmitry Lavrov.</div>
         </div>
         </div>
 
@@ -826,6 +835,7 @@ function Spaceship(object, domElement){
   };
 
   evt_elem.addEventListener('mousedown', function(event){
+    //openFullscreen();
     s.mouse_is_down=true;
     console.log("mouse down event");
     s.mouse_prev_x=event.clientX;
@@ -1129,6 +1139,21 @@ function for_all_elements(class_names, f){
   }
 }
 
+function openFullscreen() {
+      var elem = document.body;//getElementById("canvas");
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.mozRequestFullScreen) { /* Firefox */
+        elem.mozRequestFullScreen();
+      } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) { /* IE/Edge */
+        elem.msRequestFullscreen();
+      }
+      elem.style.width = '100%';
+      elem.style.height = '100%';
+    }
+
 function init() {
     for_all_elements(["number_box", "info_text"],
     function(l){
@@ -1315,6 +1340,12 @@ function init() {
 
     window.addEventListener("hashchange", parse_arguments, false);
 
+
+    window.addEventListener("load",function() {
+    	setTimeout(function(){
+    		window.scrollTo(0, 1);
+    	}, 0);
+    });
     return true;
 }
 
