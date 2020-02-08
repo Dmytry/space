@@ -68,6 +68,12 @@
               //left:50%;
             }
 
+            .slider_left{
+              top: 20vh;
+              height: 60vh;
+              left: 2pt;
+            }
+
             .slider {
               position:absolute;
               width: 1.2em;
@@ -99,10 +105,10 @@
               text-align: center;
               z-index: 20;
             }
+
             .slider_number{
               position:absolute;
               top:10%;
-              right:130%;
               //width:3em;
               white-space: nowrap;
 
@@ -113,49 +119,11 @@
               //border-width:1px;
               //border-color:#00FF00;
             }
-
-            #throttle {
-              position:absolute;
-              top: 20vh;
-              height: 60vh;
-              left: 2pt;
-              width: 1.2em;
-              max-width: 1.2em;
-              border-style: solid;
-              border-width:2pt;
-              border-color:#0000cf;
-              z-index: 10;
-              font-family: Arial, Helvetica, sans-serif;
-              font-size: 2vh;//1.000em;
+            .slider_right .slider_number{
+              right:130%;
             }
-            #throttle_bar {
-              position:absolute;
-              left: 0;
-              top: 50%;
-              width: 100%;
-              height: 0;
-              background-color:red;
-              box-sizing: border-box;
-              margin:0px;
-            }
-            .throttle_text {
-              margin: 0;
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              -ms-transform: translate(-50%, -50%);
-              transform: translate(-50%, -50%);
-              text-align: center;
-              z-index: 20;
-            }
-            #throttle_number{
-              position:absolute;
+            .slider_left .slider_number{
               left:130%;
-              //width:5em;
-              white-space: nowrap;
-              transform: translate(0, -50%);
-              background-color: black;
-
             }
 
             #more_info{
@@ -259,23 +227,14 @@
           </div>
         </div>
         </div>
-          <!--
-        <input type="range" min="0" max="100" value="50" class="slider" id="myRange">        -->
 
-
-
-
-
-        <div id="throttle"
-        onmousedown="throttle_mousedown(event)"
-        >
-        <div class="throttle_text">
+        <div id="acceleration" class="slider slider_left">
+        <div class="slider_text">
         A<br/>C<br/>C<br/>E<br/>L<br/>E<br/>R<br/>A<br/>T<br/>I<br/>O<br/>N
         </div>
-        <div id="throttle_bar"></div>
-        <div id="throttle_number" class="hidden"></div>
+        <div class="slider_bar"></div>
+        <div class="slider_number hidden">1</div>
         </div>
-
 
         <div id="exposure" class="slider slider_right">
         <div class="slider_text">
@@ -896,9 +855,10 @@ function Spaceship(object, domElement){
     console.log("Key up: "+event.keyCode);
     s.keys[event.keyCode]=false;
     throttle_value=0;
+    sliders.acceleration.value=throttle_value;
     //if(event.keyCode==32){
       //throttle_value=0;
-      update_throttle();
+      sliders.acceleration.update_view();
     //}
   });
 
@@ -937,6 +897,9 @@ function Spaceship(object, domElement){
     }else{
     	dir_vector.z=-accel_scale*throttle_value*dt
     }
+
+    sliders.acceleration.value=throttle_value;
+    sliders.acceleration.update_view();
 
     /*
     if(s.keys[32]){
@@ -1182,6 +1145,15 @@ function init() {
       return (v>=0?"+"+v.toFixed(2) : v.toFixed(2)) + "mag";
     }
 
+    sliders.acceleration.scale=1;
+    sliders.acceleration.value_str=function(){
+      var v=sliders.acceleration.value*sliders.acceleration.scale;
+      return (v>=0?"+"+v.toFixed(2) : v.toFixed(2)) + " m/s²";
+    }
+    sliders.acceleration.on_changed=function(){
+      throttle_value=sliders.acceleration.value;
+    }
+
     var supports_half=false;
     var supports_float=false;
     try{
@@ -1405,8 +1377,6 @@ function animate(time_ms) {
     renderer.render(fs_quad_scene, fs_quad_camera)
 
     prev_time_ms=time_ms;
-
-    update_throttle();
 }
 
 // slider implementation
@@ -1427,11 +1397,14 @@ function Slider(obj, el, direction){
   obj.value_str=function(){
     return obj.value.toFixed(2);
   }
+  obj.on_changed=function(v){
+  }
   obj.value=0;
   obj.old_value=0;
 
   obj.update_view=function(){
     if(obj.value==obj.old_value)return;
+    obj.on_changed();
     var y=0.5-0.5*obj.value;
     if(y<0.5){
       obj.bar_el.style[top_or_left]=(y*100)+"%";
@@ -1452,9 +1425,9 @@ function Slider(obj, el, direction){
        obj.num_el.classList.add("hidden");
       }, 500);
   }
-  obj.update_event=function(e){
+  obj.update_event=function(e, clientY){
     var rect = el.getBoundingClientRect();
-    var y = (e.clientY - rect.top)/rect.height;
+    var y = (clientY - rect.top)/rect.height;
     if(y<0.02)y=0;
     if(y>0.98)y=1;
     obj.value = 2*(0.5-y);
@@ -1462,7 +1435,7 @@ function Slider(obj, el, direction){
     obj.update_view();
   }
   obj.mousemove=function(e){
-    obj.update_event(e);
+    obj.update_event(e, e.clientY);
     e.preventDefault();
     e.stopPropagation();
   }
@@ -1474,77 +1447,49 @@ function Slider(obj, el, direction){
   }
   obj.mousedown=function(e){
     obj.is_down=true;
-    obj.update_event(e);
+    obj.update_event(e, e.clientY);
     window.addEventListener( 'mousemove', obj.mousemove, event_opts );
     window.addEventListener( 'mouseup', obj.mouseup, event_opts);
     e.preventDefault();
     e.stopPropagation();
   }
   el.addEventListener("mousedown", obj.mousedown);
-  return obj;
-}
 
-function update_throttle(){
-  if(throttle_value!=old_throttle_value){
-    throttle_transition_start=global_time_ms;
-
-    throttle_number_element = document.getElementById('throttle_number');
-    var y=0.5-0.5*throttle_value;
-    if(y<0.5){
-      throttle_bar_element.style.top=(y*100)+"%";
-      throttle_bar_element.style.height=((0.5-y)*100)+"%";
-      throttle_bar_element.style.backgroundColor="#00af00";
-    }else{
-      throttle_bar_element.style.top="50%";
-      throttle_bar_element.style.height=((y-0.5)*100)+"%";
-      throttle_bar_element.style.backgroundColor="#bf0000";
+  obj.touchstart=function(e){
+    var old_touch_id=obj.touch_id;
+    touch=e.changedTouches[0];
+    if(touch){
+      obj.touch_id=touch.identifier;
+      obj.update_event(e, touch.clientY);
+      if(!old_touch_id){
+        window.addEventListener("touchmove", obj.touchmove, event_opts);
+        window.addEventListener("touchend", obj.touchend, event_opts);
+        window.addEventListener("touchcancel", obj.touchend, event_opts);
+        e.preventDefault();
+        e.stopPropagation();
+      }
     }
-    old_throttle_value=throttle_value;
-    throttle_number_element.textContent=throttle_value.toFixed(2)+" m/s²";
-    throttle_number_element.style.top=(y*100)+"%";
-    throttle_number_element.className="visible";
   }
-
-  if(throttle_transition_start>=0 && (global_time_ms-throttle_transition_start>500)){
-    throttle_number_element = document.getElementById('throttle_number');
-    throttle_number_element.className="hidden";
-    throttle_transition_start=-1;
+  obj.touchmove=function(e){
+    touch=e.changedTouches.item(obj.touch_id);
+    if(touch){
+      obj.update_event(e, touch.clientY);
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }
-}
-
-function update_throttle_event(e){
-  var rect = throttle_element.getBoundingClientRect();
-  var y = (e.clientY - rect.top)/rect.height;
-  if(y<0.02)y=0;
-  if(y>0.98)y=1;
-  throttle_value=2*(0.5-y);
-  if(Math.abs(throttle_value)<0.02)throttle_value=0;
-  //update_throttle();
-}
-function throttle_mousedown(e){
-  console.log("throttle mouse down event");
-  throttle_down=true;
-  update_throttle_event(e);
-  window.addEventListener( 'mousemove', throttle_mousemove, true );
-  window.addEventListener( 'mouseup', throttle_mouseup, true );
-  e.preventDefault();
-  e.stopPropagation();
-}
-
-function throttle_mousemove(e){
-  if(throttle_down){
-    update_throttle_event(e);
-    e.preventDefault();
-    e.stopPropagation();
+  obj.touchend=function(e){
+    touch=e.changedTouches.item(obj.touch_id);
+    if(touch){
+      window.removeEventListener("touchmove", obj.touchmove, event_opts);
+      window.removeEventListener("touchend", obj.touchend, event_opts);
+      window.removeEventListener("touchcancel", obj.touchend, event_opts);
+      obj.touch_id=null;
+    }
   }
-}
-function throttle_mouseup(e){
-  console.log("throttle mouse up event");
-  throttle_down=false;
-  window.removeEventListener('mousemove', throttle_mousemove );
-  window.removeEventListener('mouseup', throttle_mouseup);
-  e.preventDefault();
-  //e.stopPropagation();
+  el.addEventListener("touchstart", obj.touchstart, event_opts);
+
+  return obj;
 }
 
 function hide_button_click(){
