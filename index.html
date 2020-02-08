@@ -1141,7 +1141,7 @@ function init() {
 
     sliders.exposure.scale=15;
     sliders.exposure.value_str=function(){
-      var v=sliders.exposure.value*sliders.exposure.scale;
+      var v=-sliders.exposure.value*sliders.exposure.scale;
       return (v>=0?"+"+v.toFixed(2) : v.toFixed(2)) + "mag";
     }
 
