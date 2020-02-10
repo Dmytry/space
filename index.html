@@ -3,7 +3,7 @@
     <head>
         <title>Relativistic Spaceship</title>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <meta name="viewport" content="viewport-fit=cover, width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0">
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <style>
             html, body {
@@ -11,7 +11,7 @@
                 width:100%;
                 height:100%;
                 min-height:100%;
-                overflow: hidden;
+                //overflow: hidden;
                 color: #FF9000;
                 font-family: Arial, Helvetica, sans-serif;
                 font-size: 2.1vh;//2vh;//1em;
@@ -45,11 +45,16 @@
               left: 0px;
               //left: 3em;
               //width: calc(100% - 6em);
-              width: 100%;
-              height: 100%;
+              //width: 100%;
+              //height: 100%;
+              bottom:0;
+              right:0;
               border: 0px;
-              margin:  0px;
               padding: 0px;
+              //margin:  100px;
+              margin: env(safe-area-inset-top) env(safe-area-inset-right)
+               env(safe-area-inset-bottom) env(safe-area-inset-left);
+
               z-index: 10;
             }
             #info {
