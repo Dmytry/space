@@ -13,6 +13,8 @@
                 min-height:100%;
                 overflow: hidden;
                 color: #FF9000;
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 2.1vh;//2vh;//1em;
 
 
   -webkit-touch-callout: none; /* iOS Safari */
@@ -54,8 +56,6 @@
                 //top : 0px;
                 //left: 0px;
                 z-index: 10;
-                font-family: Arial, Helvetica, sans-serif;
-                font-size: 2vh;//1em;
 
                 //border-style: solid;
                 //border-width:1px;
@@ -84,7 +84,7 @@
               border-color:#0000cf;
               z-index: 10;
               font-family: Arial, Helvetica, sans-serif;
-              font-size: 2vh;//1.000em;
+              font-size: 2.1vh;//1.000em;
             }
             .slider_bar {
               position:absolute;
@@ -153,6 +153,12 @@
               transition: visibility 0s 2s, opacity 2s linear;
             }
 
+            .hidden_fast{
+              visibility: hidden;
+              opacity: 0;
+              transition: visibility 0s 0.5s, opacity 0.5s linear;
+            }
+
 
             .value_line{
               //display: inline-block;
@@ -192,7 +198,7 @@
             .info_text{
               //position:absolute;
 
-              width:calc(100%-6em);
+              width:calc(100% - 6em);
               padding-left:3em;
               padding-right:3em;
               padding-top:1em;
@@ -207,16 +213,43 @@
             }
 
             .speed_line{
-              width:calc(100%-6em);
+              width:calc(100% - 6em);
               padding-left:3em;
               padding-right:3em;
             }
             a{
               color: inherit;
               text-decoration:none;
+              //border-bottom: 2px dashed #ff7000;
+            }
+
+            .underlined{
+              text-decoration:underline;
             }
 
 
+            #about{
+              position:absolute;
+              //top:30vh;
+              margin-left:0.5em;
+              margin-right:0.5em;
+              bottom:1em;
+
+              //position: absolute;
+              //top: 50%;
+              //left: 50%;
+              //-ms-transform: translate(-50%, -50%);
+              //transform: translate(-50%, -50%);
+
+              background-color:black;
+              border-style: solid;
+              border-width:1px;
+              border-color:#ff7000;
+              padding:1em;
+              z-index:50;
+              //overflow:auto;
+              //white-space: nowrap;
+            }
 
         </style>
     </head>
@@ -237,9 +270,9 @@
               <div class="value_line">Ship time (years) = <div id="ship_time" class="number_box">0</div></div>
               <div class="value_line">World time (years) = <div id="world_time" class="number_box">0</div></div>
           </div>
-          <div id="copyright"><a href="http://dmytry.com">© 2020 Dmytry Lavrov.</a> <a href="https://github.com/mrdoob/three.js/">Uses Three.JS framework.</a></div>
         </div>
         </div>
+        <div id="copyright" onclick="show_about()">© 2020 Dmytry Lavrov.<!--<a href="http://dmytry.com">© 2020 Dmytry Lavrov.</a> <a href="https://github.com/mrdoob/three.js/">Uses Three.JS framework.</a>--></div>
 
         <div id="acceleration" class="slider slider_left">
         <div class="slider_text">
@@ -255,6 +288,12 @@
         </div>
         <div class="slider_bar"></div>
         <div class="slider_number hidden">1</div>
+        </div>
+
+        <div id="about" class="hidden_fast">Relativistic flight visualizer by <a href="http://dmytry.com" class="underlined">Dmytry Lavrov</a>.<br>
+        This project is open source; you can obtain sources at<br>
+        <a href="https://github.com/Dmytry/space" class="underlined">https://github.com/Dmytry/space</a><br>
+        It uses Three.JS webgl framework; the three.js license is <a href="three.js.LICENSE.txt" class=underlined>here</a>.
         </div>
 
         </div>
@@ -1567,7 +1606,7 @@ function Slider(obj, el, direction){
 
 function hide_button_click(){
   var d = document.getElementById("hideable");
-  var m= document.getElementById("collapse_mark");
+  var m = document.getElementById("collapse_mark");
   if (d.style.display === "none") {
     d.style.display = "block";
     m.textContent="";
@@ -1575,6 +1614,26 @@ function hide_button_click(){
     d.style.display = "none";
     m.textContent="Click here to show the text again.";
   }
+}
+
+
+var about=document.getElementById("about");
+
+
+function hide_about(){
+  console.log("hide about");
+  about.classList.remove("visible");
+  about.classList.add("hidden_fast");
+  window.removeEventListener("mousedown", hide_about);
+  window.removeEventListener("touchstart", hide_about);
+}
+
+function show_about(){
+  console.log("show about");
+  about.classList.remove("hidden_fast");
+  about.classList.add("visible");
+  window.addEventListener("mousedown", hide_about);
+  window.addEventListener("touchstart", hide_about);
 }
 
 if(init())animate();
