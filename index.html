@@ -11,13 +11,11 @@
                 width:100%;
                 height:100%;
                 min-height:100%;
-                //overflow: hidden;
+                overflow: hidden;
                 color: #FF9000;
                 font-family: Arial, Helvetica, sans-serif;
-                font-size: 2.1vh;//2vh;//1em;
+                font-size: 2.1vh;
                 background-color: #000000;
-
-
   -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
      -khtml-user-select: none; /* Konqueror HTML */
@@ -27,7 +25,6 @@
                                   supported by Chrome, Opera and Firefox */
             }
             #canvas {
-                //float: left;
                 position: absolute;
                 top : 0px;
                 left: 0px;
@@ -37,42 +34,27 @@
                 border: 0px;
                 margin:  0px;
                 padding: 0px;
-                //z-index: -10;
             }
             .container{
               position: absolute;
               top : 0px;
               left: 0px;
-              //left: 3em;
-              //width: calc(100% - 6em);
-              //width: 100%;
-              //height: 100%;
               bottom:0;
               right:0;
               border: 0px;
               padding: 0px;
-              //margin:  100px;
               margin: env(safe-area-inset-top) env(safe-area-inset-right)
                env(safe-area-inset-bottom) env(safe-area-inset-left);
-
               z-index: 10;
             }
             #info {
-                //width:100%
-                //top : 0px;
-                //left: 0px;
                 z-index: 10;
-
-                //border-style: solid;
-                //border-width:1px;
-                //border-color:blue;
             }
 
             .slider_right{
               top: 20vh;
               height: 60vh;
               right: 2pt;
-              //left:50%;
             }
 
             .slider_left{
@@ -90,7 +72,7 @@
               border-color:#0000cf;
               z-index: 10;
               font-family: Arial, Helvetica, sans-serif;
-              font-size: 2.1vh;//1.000em;
+              font-size: 2.1vh;
             }
             .slider_bar {
               position:absolute;
@@ -116,15 +98,9 @@
             .slider_number{
               position:absolute;
               top:10%;
-              //width:3em;
               white-space: nowrap;
-
               transform: translate(0, -50%);
               background-color: black;
-
-              //border-style: solid;
-              //border-width:1px;
-              //border-color:#00FF00;
             }
             .slider_right .slider_number{
               right:130%;
@@ -167,13 +143,7 @@
 
 
             .value_line{
-              //display: inline-block;
               text-align:right;
-
-              //border-style: solid;
-              //border-width:1px;
-              //border-color:red;
-
               margin:0;
               padding:0;
             }
@@ -181,19 +151,10 @@
             .number_box{
               display: inline-block;
               min-width: 6em;
-              //max-width: 6em;
               height:100%;
-              //max-height: 100%;
-              //height:100%;
-              //overflow: hidden;
               font-family: Courier, monospace;
               vertical-align: middle;
-              //border-style: solid;
-              //border-width:1px;
-              //border-color:blue;
               text-align:left;
-              //font-size:200%;
-              //white-space: nowrap;
             }
 
             .number_inline{
@@ -202,19 +163,13 @@
             }
 
             .info_text{
-              //position:absolute;
-
               width:calc(100% - 6em);
               padding-left:3em;
               padding-right:3em;
               padding-top:1em;
 
-              //bottom: 5%;
               z-index: 10;
-              //color: white;
-              //text-align:center;
               font-family: Arial, Helvetica, sans-serif;
-              //font-size: 1.5em;
               white-space: pre-wrap;
             }
 
@@ -225,42 +180,30 @@
             }
             a{
               color: inherit;
-              text-decoration:none;
-              //border-bottom: 2px dashed #ff7000;
+              text-decoration:underline;
             }
 
             .underlined{
               text-decoration:underline;
             }
 
-
             #about{
               position:absolute;
-              //top:30vh;
               margin-left:0.5em;
               margin-right:0.5em;
               bottom:1em;
-
-              //position: absolute;
-              //top: 50%;
-              //left: 50%;
-              //-ms-transform: translate(-50%, -50%);
-              //transform: translate(-50%, -50%);
-
               background-color:black;
               border-style: solid;
               border-width:1px;
               border-color:#ff7000;
               padding:1em;
               z-index:50;
-              //overflow:auto;
-              //white-space: nowrap;
             }
 
         </style>
     </head>
     <body>
-        <div id="canvas"> </div>
+        <div id="canvas"></div>
         <div class="container" id="all_ui" ondblclick="toggleFullscreen()">
         <div id="info">
           <noscript>You need to enable JavaScript for this page to work.<br></noscript>
@@ -296,10 +239,10 @@
         <div class="slider_number hidden">1</div>
         </div>
 
-        <div id="about" class="hidden_fast">Relativistic flight visualizer by <a href="http://dmytry.com" class="underlined">Dmytry Lavrov</a>.<br>
+        <div id="about" class="hidden_fast">Relativistic flight visualizer by <a href="http://dmytry.com">Dmytry Lavrov</a>.<br>
         This project is open source; you can obtain sources at<br>
-        <a href="https://github.com/Dmytry/space" class="underlined">https://github.com/Dmytry/space</a><br>
-        It uses Three.JS webgl framework; the three.js license is <a href="three.js.LICENSE.txt" class=underlined>here</a>.
+        <a href="https://github.com/Dmytry/space">https://github.com/Dmytry/space</a><br>
+        It uses Three.JS webgl framework; the three.js license is <a href="three.js.LICENSE.txt">here</a>.
         </div>
 
         </div>
@@ -1425,6 +1368,7 @@ function onWindowResize() {
 
   var w=container.clientWidth;
   var h=container.clientHeight;
+  console.log("Resize width: "+w+" height: "+h);
 
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
