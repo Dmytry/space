@@ -1,5 +1,7 @@
 # Relativistic spaceflight simulator
 
+### [View it here](https://dmytry.github.io/space)
+
 Special thanks to Mr.doob for three.js (WebGL wrapper and scene graph renderer) and Silvio Paganini for help with adapting my bloom effect to three.js
 
 This is a relativistic spaceflight simulator which shows what it would look like if you were on a 
