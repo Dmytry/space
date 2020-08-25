@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="viewport-fit=cover, width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0">
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="icon_512_512.png"> 
+        <link rel="apple-touch-icon" href="icon_512_512.png">
         <style>
             html, body {
                 margin: 0px;
@@ -1081,7 +1081,6 @@ function parse_arguments(){
           }*/
         }
       }
-
       var acceleration=params.get("acceleration");
       if(acceleration!=null){
         acceleration=parseFloat(acceleration);
@@ -1093,6 +1092,10 @@ function parse_arguments(){
         document.getElementById("all_ui").style.visibility="visible";
       }else{
         document.getElementById("all_ui").style.visibility="hidden";
+      }
+      var param_color_storage_bias=params.get("color_storage_bias");
+      if(param_color_storage_bias!=null){
+        color_storage_bias=parseFloat(param_color_storage_bias);
       }
 
     }
