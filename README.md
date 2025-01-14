@@ -10,6 +10,8 @@ This is a relativistic spaceflight simulator which shows what it would look like
 spaceship traveling close to the speed of light. 
 It is loosely based on my original code from 2012 implementing relativistic effects in my game The Polynomial. 
 
+Note that this page is a Progressive Web App, that is, if you add it to your home screen (by using, confusingly enough, the "share" button on iOS), it will work like an app - filling all of the screen, even around screen notches or camera holes.
+
 It simulates relativistic boost (for spaceship motion), relativistic aberration and Doppler effect (both frequency and intensity). It also simulates cosmic microwave background radiation.
 
 The view is displayed as 1 year = 1 second timelapse. 
@@ -22,14 +24,15 @@ Copyright: 2020 Dmytry Lavrov. Website: http://dmytry.com
 
 License: Attribution-ShareAlike CC BY-SA https://creativecommons.org/licenses/by-sa/4.0/legalcode for the index.html
 
-# Explanations
+# How it works
 
 I am going to go into a bit of detail of how I implemented relativistic rendering, complete with the Doppler Effect. I'm not going to discuss the source code verbatim, but make a few simplifications in the snippets.
 
 I'm also going to make an assumption that you have some basic knowledge of special relativity, as it is a complex topic which is difficult to explain alongside all the rendering complications; it is much easier to first learn it in simple cases where velocities are pointed along the x axis, than in a renderer that handles arbitrary rotations.
 
 First, lets establish some conventions. For rendering stars, it is most convenient to measure distances in light-years and time in years. Light travels one light-year per year, so the speed of light is then simply 1, which helps write equations concisely and without cluttering everything with c and c squared.
-Transformations
+
+## Transformations
 
 3D transformations in computer graphics are conventionally done using 4x4 matrices and homogeneous coordinates (positions of form x,y,z,1).
 
