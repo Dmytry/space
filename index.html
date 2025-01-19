@@ -928,14 +928,13 @@ function Spaceship(object, domElement){
     s.object.position.set(s.pos.x-s.offset.x, s.pos.y-s.offset.y, s.pos.z-s.offset.z);
     s.object.setRotationFromQuaternion(s.ori);
 
-    // Fix numerical instability issues
-
     if(s.vel4.w>340 && s.vel4.w<1700){
       document.body.style.color="#00a0ff";
     }else{
       document.body.style.color="#ff7000";
     }
 
+    // Fix numerical instability issues
     infos.speed.textContent=one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";//(speed*100).toFixed(6)+"% "+one_minus_x_percent_string(gamma_to_one_minus_beta(s.vel4.w))+"%";
     infos.gamma.textContent=s.vel4.w.toPrecision(3);//toFixed(3);
     var dist=s.big_pos.length();
@@ -951,7 +950,7 @@ function Spaceship(object, domElement){
       infos.world_time.textContent=s.world_time.toPrecision(3);
     }
 
-
+    // Old auto-exposure code, disabled
     /*
     if(s.vel.length()>1E-10){
       var doppler_along_view=doppler_for_view_dir(s.vel, forward);
@@ -980,17 +979,15 @@ function Spaceship(object, domElement){
     var fwd_doppler=forward_doppler_from_gamma(s.vel4.w);
     infos.doppler_max.textContent=fwd_doppler.toPrecision(3);
 
-
     //color_storage_scale=Math.pow(Math.min(fwd_doppler,4000),-0.75)/64;//Math.pow(Math.min(fwd_doppler, 1000),-1)/64;
 
+    // Calculate scaling for the colors (to avoid exceeding half-float range in the render target)
     fwd_doppler=Math.min(fwd_doppler, 6000);
     var fwd_doppler2=fwd_doppler*fwd_doppler;
     var a=temperature_to_color(6000*fwd_doppler)[1]/fwd_doppler2;
     var b=temperature_to_color(2.74*fwd_doppler)[1]*CMB_scale/fwd_doppler2;
 
-
     color_storage_scale=Math.min(2048/((a+b)*exposure),1/64);
-
 
     if(fwd_doppler>1300){// ad-hoc anti overflow nonsense
       color_storage_scale/=Math.min(2,1+(fwd_doppler-1300)/1000);
