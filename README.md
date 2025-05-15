@@ -82,7 +82,8 @@ where blackbody_radiation function converts a temperature into an RGB value, and
 Above, I had referred a lot to "Lorentz matrices". What is a Lorentz matrix? It is a matrix describing space-time transformations (Lorentz transformations), similarly to how matrices are used to describe space transformations in computer graphics.
 
 Lorentz transformations include any combinations of change of the reference frame (speed) and ordinary rotations and translations. Thus a full Lorentz transformation is represented with a 4x4 matrix and a translation four-vector.
-Numeric precision and four velocities
+
+## Numeric precision and four velocities
 
 As you accelerate in a spaceship, the speed approaches, but never reaches the speed of light. Additionally, it does not take a very long time until the speed becomes so close to the speed of light (1) that the numeric precision is insufficient for distinguishing it from 1.
 
@@ -93,7 +94,8 @@ To work around this problem, I used four-velocities to represent ship velocity. 
 Another advantage of using four velocities is that velocity addition is considerably more straightforward (although you need to "renormalize" the four-velocity afterwards).
 
 The numerical precision issues are of general interest, as they arise in all sorts of computations where an important value converges to a limit other than 1.
-Displaying numbers that are very very close to 1
+
+## Displaying numbers that are very very close to 1
 
 With double precision numbers, the maximum number of nines that would work correctly, would be around 16 at best. So how do I get a page full of nines above?
 
