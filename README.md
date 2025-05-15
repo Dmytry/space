@@ -127,7 +127,8 @@ One interesting effect that I wanted to show, was that if you were in a spaceshi
 ![A screenshot showing blue shifted cosmic microwave background radiation](https://github.com/Dmytry/space/blob/master/article_img_3.png?raw=true)
 
 I reused parts of my stars shader, but appied them to an icosahedron to simulate a dome around the user. At the relevant blue shift, the aberration is so strong that the dome is effectively collapsed to a single point.
-Limitations of float16 buffer
+
+## Limitations of float16 buffer
 
 ![A screenshot showing artifacts caused by denormal numbers](https://github.com/Dmytry/space/blob/master/article_img_4.png?raw=true)
 
